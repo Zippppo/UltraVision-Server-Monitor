@@ -43,6 +43,7 @@ By default the service:
 - serves the dashboard on `0.0.0.0:8090`,
 - shows each folder against a `600 GB` quota,
 - shows `xiaoqingguo` total usage and remaining remote disk space,
+- shows aggregate GPU utilization and memory when `nvidia-smi` is available,
 - writes data to `public\data\latest.json` and `public\data\history.json`.
 
 Run a single collection without starting the web server:
@@ -72,6 +73,8 @@ Important fields:
 - `ssh_host`: SSH alias or host, currently `h20b`.
 - `ssh_options`: SSH options. The default prevents password prompts from hanging the service.
 - `default_quota_gb`: default quota per monitored folder. It is currently `600`.
+- `collect_gpus`: collect per-GPU metrics with `nvidia-smi`. It is currently `true`.
+- `exclude_gpu_indices`: GPU indices to hide from monitoring. It currently excludes `7`.
 - `run_at`: daily collection time in `HH:MM` local time.
 - `bind`: use `0.0.0.0` for access from other machines on the same network.
 - `port`: dashboard port.

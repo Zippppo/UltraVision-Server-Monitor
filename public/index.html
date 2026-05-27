@@ -20,6 +20,15 @@
     <main>
       <section id="cards" class="metric-grid" aria-label="Folder usage"></section>
       <section id="totalOverview" class="total-overview" aria-label="User total usage"></section>
+      <section class="tool-panel" aria-label="GPU usage">
+        <div class="panel-head">
+          <div>
+            <h2>GPU usage</h2>
+            <p id="gpuHint" class="muted">Waiting for GPU data...</p>
+          </div>
+        </div>
+        <div id="gpuOverview" class="gpu-overview"></div>
+      </section>
 
       <section class="tool-panel" aria-label="Usage trend">
         <div class="panel-head">

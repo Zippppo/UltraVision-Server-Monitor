@@ -110,6 +110,10 @@ function progressClass(percent) {
   return "";
 }
 
+function formatPercent(value) {
+  return Number.isFinite(value) ? `${value.toFixed(0)}%` : "-";
+}
+
 function renderTotalOverview() {
   const container = byId("totalOverview");
   const summary = state.latest?.filesystem_summary || {};
@@ -136,6 +140,123 @@ function renderTotalOverview() {
       <div class="total-label">Disk remaining</div>
       <div class="total-value">${escapeHtml(formatBytes(diskAvailable))}</div>
       <div class="total-subtext">${escapeHtml(filesystemUse)}; quota balance ${escapeHtml(formatBytes(quotaRemaining))}</div>
+    </div>
+  `;
+}
+
+function renderGpus() {
+  const overview = byId("gpuOverview");
+  const hint = byId("gpuHint");
+  const summary = state.latest?.gpu_summary || {};
+  const gpus = Array.isArray(summary.items) ? summary.items : [];
+
+  if (!gpus.length) {
+    hint.textContent = summary.error || "No GPU rows are available.";
+    overview.innerHTML = `<div class="empty">${escapeHtml(summary.status || "no_data")}</div>`;
+    return;
+  }
+
+  const activeCount = gpus.filter((gpu) => Number(gpu.gpu_util_percent) > 0).length;
+  const utilValues = gpus.map((gpu) => Number(gpu.gpu_util_percent)).filter(Number.isFinite);
+  const memoryUsed = gpus.reduce((total, gpu) => total + (Number(gpu.memory_used_bytes) || 0), 0);
+  const memoryTotal = gpus.reduce((total, gpu) => total + (Number(gpu.memory_total_bytes) || 0), 0);
+  const memoryPercent = memoryTotal > 0 ? (memoryUsed / memoryTotal) * 100 : null;
+  const avgUtil = utilValues.length ? utilValues.reduce((sum, value) => sum + value, 0) / utilValues.length : null;
+  const maxUtil = utilValues.length ? Math.max(...utilValues) : null;
+  const excluded = Array.isArray(summary.excluded_indices) && summary.excluded_indices.length
+    ? `Excluded GPU ${summary.excluded_indices.join(", ")}`
+    : "No GPUs excluded";
+
+  hint.textContent = `${gpus.length} GPUs counted; ${activeCount} active. ${excluded}.`;
+
+  const rows = [...gpus]
+    .sort((a, b) => Number(a.index) - Number(b.index))
+    .map((gpu) => {
+      const gpuUtil = Number(gpu.gpu_util_percent);
+      const memoryUsedPercent = Number(gpu.memory_used_percent);
+      const gpuWidth = Number.isFinite(gpuUtil) ? Math.max(0, Math.min(100, gpuUtil)) : 0;
+      const memoryWidth = Number.isFinite(memoryUsedPercent) ? Math.max(0, Math.min(100, memoryUsedPercent)) : 0;
+      const powerText = Number.isFinite(gpu.power_draw_watts)
+        ? `${gpu.power_draw_watts.toFixed(0)} W`
+        : "-";
+      const powerLimit = Number.isFinite(gpu.power_limit_watts)
+        ? `${gpu.power_limit_watts.toFixed(0)} W limit`
+        : "";
+      const tempClass = Number(gpu.temperature_c) >= 80 ? "status-error" : Number(gpu.temperature_c) >= 70 ? "status-warn" : "status-muted";
+      return `
+        <tr>
+          <td>
+            <span class="gpu-id">GPU ${escapeHtml(gpu.index ?? "-")}</span>
+          </td>
+          <td>
+            <span class="gpu-name">${escapeHtml(gpu.name || "GPU")}</span>
+          </td>
+          <td class="gpu-bar-cell">
+            <div class="gpu-bar-head">
+              <span class="gpu-bar-label">Compute</span>
+              <span class="gpu-bar-value">${escapeHtml(formatPercent(gpuUtil))}</span>
+            </div>
+            <div class="gpu-bar"><span class="${progressClass(gpuUtil)}" style="width: ${gpuWidth}%"></span></div>
+          </td>
+          <td class="gpu-bar-cell">
+            <div class="gpu-bar-head">
+              <span class="gpu-bar-label">${escapeHtml(formatBytes(gpu.memory_used_bytes))}</span>
+              <span class="gpu-bar-value">${escapeHtml(formatPercent(memoryUsedPercent))}</span>
+            </div>
+            <div class="gpu-bar"><span class="${progressClass(memoryUsedPercent)}" style="width: ${memoryWidth}%"></span></div>
+            <span class="gpu-subtle">of ${escapeHtml(formatBytes(gpu.memory_total_bytes))}</span>
+          </td>
+          <td>
+            <span class="pill ${tempClass}">${escapeHtml(Number.isFinite(gpu.temperature_c) ? `${gpu.temperature_c.toFixed(0)} C` : "-")}</span>
+          </td>
+          <td>
+            <span class="gpu-number">${escapeHtml(powerText)}</span>
+            <span class="gpu-subtle">${escapeHtml(powerLimit)}</span>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  overview.innerHTML = `
+    <div class="gpu-dashboard">
+      <div class="gpu-stat-strip">
+        <div class="gpu-stat">
+          <div class="gpu-stat-label">Active</div>
+          <div class="gpu-stat-value">${escapeHtml(activeCount)} / ${escapeHtml(gpus.length)}</div>
+          <div class="gpu-stat-subtext">Non-zero compute</div>
+        </div>
+        <div class="gpu-stat">
+          <div class="gpu-stat-label">Average use</div>
+          <div class="gpu-stat-value">${escapeHtml(formatPercent(avgUtil))}</div>
+          <div class="gpu-stat-subtext">Across counted GPUs</div>
+        </div>
+        <div class="gpu-stat">
+          <div class="gpu-stat-label">Peak use</div>
+          <div class="gpu-stat-value">${escapeHtml(formatPercent(maxUtil))}</div>
+          <div class="gpu-stat-subtext">Highest current load</div>
+        </div>
+        <div class="gpu-stat">
+          <div class="gpu-stat-label">Memory</div>
+          <div class="gpu-stat-value">${escapeHtml(formatPercent(memoryPercent))}</div>
+          <div class="gpu-stat-subtext">${escapeHtml(formatBytes(memoryUsed))} / ${escapeHtml(formatBytes(memoryTotal))}</div>
+        </div>
+      </div>
+      <div class="gpu-table-wrap">
+        <table class="gpu-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Device</th>
+              <th>GPU</th>
+              <th>Memory</th>
+              <th>Temp</th>
+              <th>Power</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
     </div>
   `;
 }
@@ -366,6 +487,7 @@ function render() {
   renderHeader();
   renderCards();
   renderTotalOverview();
+  renderGpus();
   renderTable();
   drawChart();
 }

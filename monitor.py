@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import io
 import json
 import os
 import shlex
@@ -23,6 +25,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "ssh_options": ["-o", "BatchMode=yes", "-o", "ConnectTimeout=30"],
     "owner_label": "xiaoqingguo",
     "default_quota_gb": 600,
+    "collect_gpus": True,
+    "exclude_gpu_indices": [7],
     "command_timeout_seconds": 600,
     "history_limit": 400,
     "publish_command": "",
@@ -130,6 +134,18 @@ def parse_percent(value: str | None) -> float | None:
         return None
     value = value.strip().removesuffix("%")
     if not value:
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def parse_float(value: str | None) -> float | None:
+    if value is None:
+        return None
+    value = value.strip()
+    if not value or value in {"N/A", "[N/A]", "[Not Supported]"}:
         return None
     try:
         return float(value)
@@ -250,6 +266,117 @@ def collect_path(host: str, item: dict[str, Any], timeout: int) -> dict[str, Any
     return base
 
 
+def gpu_probe_command() -> str:
+    query_fields = ",".join(
+        [
+            "index",
+            "name",
+            "uuid",
+            "utilization.gpu",
+            "utilization.memory",
+            "memory.total",
+            "memory.used",
+            "memory.free",
+            "temperature.gpu",
+            "power.draw",
+            "power.limit",
+        ]
+    )
+    return " ".join(
+        [
+            "if ! command -v nvidia-smi >/dev/null 2>&1; then",
+            "printf 'nvidia_smi_missing\\n';",
+            "exit 0;",
+            "fi;",
+            f"nvidia-smi --query-gpu={query_fields} --format=csv,noheader,nounits",
+        ]
+    )
+
+
+def mib_to_bytes(value: str | None) -> int | None:
+    parsed = parse_float(value)
+    if parsed is None:
+        return None
+    return int(parsed * 1024**2)
+
+
+def collect_gpus(
+    host: str,
+    timeout: int,
+    ssh_options: list[str],
+    exclude_indices: set[int],
+) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "status": "ok",
+        "items": [],
+        "excluded_indices": sorted(exclude_indices),
+        "error": None,
+    }
+
+    try:
+        output = run_ssh(host, gpu_probe_command(), timeout, ssh_options)
+    except subprocess.TimeoutExpired:
+        result["status"] = "error"
+        result["error"] = f"ssh command timed out after {timeout} seconds"
+        return result
+    except Exception as exc:
+        result["status"] = "error"
+        result["error"] = str(exc)
+        return result
+
+    if output == "nvidia_smi_missing":
+        result["status"] = "unavailable"
+        result["error"] = "nvidia-smi is not available on the remote host"
+        return result
+
+    if not output:
+        result["status"] = "unavailable"
+        result["error"] = "nvidia-smi returned no GPU rows"
+        return result
+
+    rows = csv.reader(io.StringIO(output), skipinitialspace=True)
+    gpus = []
+    for row in rows:
+        if len(row) < 11:
+            result["status"] = "error"
+            result["error"] = f"unexpected nvidia-smi row: {row!r}"
+            return result
+
+        index = parse_int(row[0])
+        if index is not None and index in exclude_indices:
+            continue
+
+        memory_total = mib_to_bytes(row[5])
+        memory_used = mib_to_bytes(row[6])
+        memory_free = mib_to_bytes(row[7])
+        memory_used_percent = None
+        if memory_total and memory_used is not None:
+            memory_used_percent = round((memory_used / memory_total) * 100, 2)
+
+        gpus.append(
+            {
+                "index": parse_int(row[0]),
+                "name": row[1].strip(),
+                "uuid": row[2].strip(),
+                "gpu_util_percent": parse_float(row[3]),
+                "memory_util_percent": parse_float(row[4]),
+                "memory_total_bytes": memory_total,
+                "memory_used_bytes": memory_used,
+                "memory_free_bytes": memory_free,
+                "memory_used_percent": memory_used_percent,
+                "temperature_c": parse_float(row[8]),
+                "power_draw_watts": parse_float(row[9]),
+                "power_limit_watts": parse_float(row[10]),
+            }
+        )
+
+    result["items"] = gpus
+    if not gpus:
+        result["status"] = "unavailable"
+        result["error"] = "nvidia-smi returned no GPU rows"
+    return result
+
+
 def build_filesystem_summary(results: list[dict[str, Any]]) -> dict[str, Any]:
     filesystems: dict[tuple[str, str], dict[str, Any]] = {}
 
@@ -298,6 +425,11 @@ def build_snapshot(config: dict[str, Any]) -> dict[str, Any]:
     timeout = int(config.get("command_timeout_seconds", 600))
     ssh_options = normalize_ssh_options(config.get("ssh_options"))
     default_quota_gb = config.get("default_quota_gb")
+    exclude_gpu_indices = {
+        int(index)
+        for index in config.get("exclude_gpu_indices", [])
+        if str(index).strip()
+    }
     path_configs = [
         {
             **item,
@@ -307,6 +439,16 @@ def build_snapshot(config: dict[str, Any]) -> dict[str, Any]:
         for item in config["paths"]
     ]
     results = [collect_path(host, item, timeout) for item in path_configs]
+    gpu_summary = (
+        collect_gpus(host, timeout, ssh_options, exclude_gpu_indices)
+        if config.get("collect_gpus", True)
+        else {
+            "status": "disabled",
+            "items": [],
+            "excluded_indices": sorted(exclude_gpu_indices),
+            "error": None,
+        }
+    )
     if not all(item["status"] == "ok" for item in results):
         status = "degraded"
     elif any(item.get("quota_status") == "over_quota" for item in results):
@@ -320,6 +462,7 @@ def build_snapshot(config: dict[str, Any]) -> dict[str, Any]:
         "owner_label": config.get("owner_label", "xiaoqingguo"),
         "default_quota_gb": default_quota_gb,
         "filesystem_summary": build_filesystem_summary(results),
+        "gpu_summary": gpu_summary,
         "status": status,
         "paths": results,
     }
@@ -398,6 +541,12 @@ def ensure_placeholder_data(config: dict[str, Any]) -> None:
             "host": config["ssh_host"],
             "status": "no_data",
             "paths": [],
+            "gpu_summary": {
+                "status": "no_data",
+                "items": [],
+                "excluded_indices": config.get("exclude_gpu_indices", []),
+                "error": None,
+            },
             "message": "No collection has run yet.",
         }
         write_json_atomic(LATEST_PATH, placeholder)

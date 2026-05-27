@@ -152,6 +152,138 @@ main {
   padding: 16px;
 }
 
+.gpu-dashboard {
+  display: grid;
+  gap: 12px;
+}
+
+.gpu-stat-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--line);
+}
+
+.gpu-stat {
+  min-width: 0;
+  padding: 12px 14px;
+  background: #fbfcfe;
+}
+
+.gpu-stat-label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.gpu-stat-value {
+  margin-top: 8px;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 850;
+  line-height: 1;
+}
+
+.gpu-stat-subtext {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.gpu-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.gpu-table {
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+.gpu-table th,
+.gpu-table td {
+  border-top: 1px solid var(--line);
+  padding: 10px 12px;
+  vertical-align: middle;
+}
+
+.gpu-table thead th {
+  border-top: 0;
+}
+
+.gpu-id {
+  color: var(--muted);
+  font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.gpu-name {
+  font-weight: 800;
+}
+
+.gpu-subtle {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.72rem;
+}
+
+.gpu-bar-cell {
+  min-width: 180px;
+}
+
+.gpu-bar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 0.82rem;
+}
+
+.gpu-bar-label {
+  color: var(--muted);
+}
+
+.gpu-bar-value {
+  font-weight: 800;
+}
+
+.gpu-bar {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #edf0f5;
+}
+
+.gpu-bar span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--blue);
+}
+
+.gpu-bar span.warn {
+  background: var(--amber);
+}
+
+.gpu-bar span.error {
+  background: var(--red);
+}
+
+.gpu-number {
+  font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
 .total-overview {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -354,6 +486,10 @@ td code {
   }
 
   .total-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .gpu-stat-strip {
     grid-template-columns: 1fr;
   }
 
