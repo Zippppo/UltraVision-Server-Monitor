@@ -1,0 +1,230 @@
+[
+  {
+    "generated_at": "2026-05-27T15:07:03+08:00",
+    "host": "h20b",
+    "status": "ok",
+    "paths": [
+      {
+        "label": "Rongkun",
+        "path": "/home/xiaoqingguo/Rongkun",
+        "status": "ok",
+        "bytes": 88104455017,
+        "human": "83G",
+        "filesystem": "/dev/mapper/vg_data-lv_storage",
+        "filesystem_size_bytes": 3779172614144,
+        "filesystem_used_bytes": 3574455025664,
+        "filesystem_available_bytes": 12669636608,
+        "filesystem_use_percent": 100.0,
+        "mountpoint": "/home",
+        "error": null
+      },
+      {
+        "label": "yuewang",
+        "path": "/home/xiaoqingguo/yuewang",
+        "status": "ok",
+        "bytes": 1484903082280,
+        "human": "1.4T",
+        "filesystem": "/dev/mapper/vg_data-lv_storage",
+        "filesystem_size_bytes": 3779172614144,
+        "filesystem_used_bytes": 3574454894592,
+        "filesystem_available_bytes": 12669767680,
+        "filesystem_use_percent": 100.0,
+        "mountpoint": "/home",
+        "error": null
+      },
+      {
+        "label": "Hxchen",
+        "path": "/home/xiaoqingguo/Hxchen",
+        "status": "ok",
+        "bytes": 372754511691,
+        "human": "351G",
+        "filesystem": "/dev/mapper/vg_data-lv_storage",
+        "filesystem_size_bytes": 3779172614144,
+        "filesystem_used_bytes": 3574454894592,
+        "filesystem_available_bytes": 12669767680,
+        "filesystem_use_percent": 100.0,
+        "mountpoint": "/home",
+        "error": null
+      }
+    ]
+  },
+  {
+    "generated_at": "2026-05-27T15:13:12+08:00",
+    "host": "h20b",
+    "default_quota_gb": 600,
+    "filesystem_summary": {
+      "total_size_bytes": 3779172614144,
+      "total_used_bytes": 3279535321088,
+      "total_available_bytes": 307589341184,
+      "max_use_percent": 92.0,
+      "filesystems": [
+        {
+          "filesystem": "/dev/mapper/vg_data-lv_storage",
+          "mountpoint": "/home",
+          "size_bytes": 3779172614144,
+          "used_bytes": 3279535321088,
+          "available_bytes": 307589341184,
+          "use_percent": 92.0,
+          "paths": [
+            "Rongkun",
+            "yuewang",
+            "Hxchen"
+          ]
+        }
+      ]
+    },
+    "status": "quota_exceeded",
+    "paths": [
+      {
+        "label": "Rongkun",
+        "path": "/home/xiaoqingguo/Rongkun",
+        "status": "ok",
+        "quota_status": "ok",
+        "quota_bytes": 644245094400,
+        "quota_human": "600.00 GB",
+        "quota_used_percent": 13.68,
+        "quota_remaining_bytes": 556139244384,
+        "quota_over_bytes": 0,
+        "bytes": 88105850016,
+        "human": "83G",
+        "filesystem": "/dev/mapper/vg_data-lv_storage",
+        "filesystem_size_bytes": 3779172614144,
+        "filesystem_used_bytes": 3279535321088,
+        "filesystem_available_bytes": 307589341184,
+        "filesystem_use_percent": 92.0,
+        "mountpoint": "/home",
+        "error": null
+      },
+      {
+        "label": "yuewang",
+        "path": "/home/xiaoqingguo/yuewang",
+        "status": "ok",
+        "quota_status": "over_quota",
+        "quota_bytes": 644245094400,
+        "quota_human": "600.00 GB",
+        "quota_used_percent": 184.71,
+        "quota_remaining_bytes": -545735498564,
+        "quota_over_bytes": 545735498564,
+        "bytes": 1189980592964,
+        "human": "1.1T",
+        "filesystem": "/dev/mapper/vg_data-lv_storage",
+        "filesystem_size_bytes": 3779172614144,
+        "filesystem_used_bytes": 3279535169536,
+        "filesystem_available_bytes": 307589492736,
+        "filesystem_use_percent": 92.0,
+        "mountpoint": "/home",
+        "error": null
+      },
+      {
+        "label": "Hxchen",
+        "path": "/home/xiaoqingguo/Hxchen",
+        "status": "ok",
+        "quota_status": "ok",
+        "quota_bytes": 644245094400,
+        "quota_human": "600.00 GB",
+        "quota_used_percent": 57.86,
+        "quota_remaining_bytes": 271493062629,
+        "quota_over_bytes": 0,
+        "bytes": 372752031771,
+        "human": "351G",
+        "filesystem": "/dev/mapper/vg_data-lv_storage",
+        "filesystem_size_bytes": 3779172614144,
+        "filesystem_used_bytes": 3279535443968,
+        "filesystem_available_bytes": 307589218304,
+        "filesystem_use_percent": 92.0,
+        "mountpoint": "/home",
+        "error": null
+      }
+    ]
+  },
+  {
+    "generated_at": "2026-05-27T15:19:53+08:00",
+    "host": "h20b",
+    "owner_label": "xiaoqingguo",
+    "default_quota_gb": 600,
+    "filesystem_summary": {
+      "total_size_bytes": 3779172614144,
+      "total_used_bytes": 3279541686272,
+      "total_available_bytes": 307582976000,
+      "max_use_percent": 92.0,
+      "filesystems": [
+        {
+          "filesystem": "/dev/mapper/vg_data-lv_storage",
+          "mountpoint": "/home",
+          "size_bytes": 3779172614144,
+          "used_bytes": 3279541686272,
+          "available_bytes": 307582976000,
+          "use_percent": 92.0,
+          "paths": [
+            "Rongkun",
+            "yuewang",
+            "Hxchen"
+          ]
+        }
+      ]
+    },
+    "status": "quota_exceeded",
+    "paths": [
+      {
+        "label": "Rongkun",
+        "path": "/home/xiaoqingguo/Rongkun",
+        "status": "ok",
+        "quota_status": "ok",
+        "quota_bytes": 644245094400,
+        "quota_human": "600.00 GB",
+        "quota_used_percent": 13.68,
+        "quota_remaining_bytes": 556133437453,
+        "quota_over_bytes": 0,
+        "bytes": 88111656947,
+        "human": "83G",
+        "filesystem": "/dev/mapper/vg_data-lv_storage",
+        "filesystem_size_bytes": 3779172614144,
+        "filesystem_used_bytes": 3279541686272,
+        "filesystem_available_bytes": 307582976000,
+        "filesystem_use_percent": 92.0,
+        "mountpoint": "/home",
+        "error": null
+      },
+      {
+        "label": "yuewang",
+        "path": "/home/xiaoqingguo/yuewang",
+        "status": "ok",
+        "quota_status": "over_quota",
+        "quota_bytes": 644245094400,
+        "quota_human": "600.00 GB",
+        "quota_used_percent": 184.71,
+        "quota_remaining_bytes": -545735498564,
+        "quota_over_bytes": 545735498564,
+        "bytes": 1189980592964,
+        "human": "1.1T",
+        "filesystem": "/dev/mapper/vg_data-lv_storage",
+        "filesystem_size_bytes": 3779172614144,
+        "filesystem_used_bytes": 3279541694464,
+        "filesystem_available_bytes": 307582967808,
+        "filesystem_use_percent": 92.0,
+        "mountpoint": "/home",
+        "error": null
+      },
+      {
+        "label": "Hxchen",
+        "path": "/home/xiaoqingguo/Hxchen",
+        "status": "ok",
+        "quota_status": "ok",
+        "quota_bytes": 644245094400,
+        "quota_human": "600.00 GB",
+        "quota_used_percent": 57.86,
+        "quota_remaining_bytes": 271493062629,
+        "quota_over_bytes": 0,
+        "bytes": 372752031771,
+        "human": "351G",
+        "filesystem": "/dev/mapper/vg_data-lv_storage",
+        "filesystem_size_bytes": 3779172614144,
+        "filesystem_used_bytes": 3279541706752,
+        "filesystem_available_bytes": 307582955520,
+        "filesystem_use_percent": 92.0,
+        "mountpoint": "/home",
+        "error": null
+      }
+    ]
+  }
+]

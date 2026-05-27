@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>H20B Storage Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Remote storage</p>
+        <h1>H20B Storage Monitor</h1>
+        <p id="subtitle" class="muted">Waiting for data...</p>
+      </div>
+      <div id="overallStatus" class="status-badge status-muted">No data</div>
+    </header>
+
+    <main>
+      <section id="cards" class="metric-grid" aria-label="Folder usage"></section>
+      <section id="totalOverview" class="total-overview" aria-label="User total usage"></section>
+
+      <section class="tool-panel" aria-label="Usage trend">
+        <div class="panel-head">
+          <div>
+            <h2>Daily trend</h2>
+            <p id="chartHint" class="muted">History will appear after scheduled runs.</p>
+          </div>
+          <button id="refreshButton" class="icon-button" type="button" title="Refresh now" aria-label="Refresh now">
+            <span aria-hidden="true">Refresh</span>
+          </button>
+        </div>
+        <canvas id="trendCanvas" height="320"></canvas>
+      </section>
+
+      <section class="tool-panel" aria-label="History table">
+        <div class="panel-head">
+          <div>
+            <h2>Recent checks</h2>
+            <p class="muted">Latest 30 folder measurements.</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Folder</th>
+                <th>Path</th>
+                <th>Used</th>
+                <th>Filesystem</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="historyRows">
+              <tr>
+                <td colspan="6">No history yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

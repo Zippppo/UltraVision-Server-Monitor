@@ -1,0 +1,5 @@
+name: storage-monitor
+channels:
+  - defaults
+dependencies:
+  - python=3.11

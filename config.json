@@ -1,0 +1,31 @@
+{
+  "ssh_host": "h20b",
+  "run_at": "08:00",
+  "bind": "0.0.0.0",
+  "port": 8090,
+  "ssh_options": [
+    "-o",
+    "BatchMode=yes",
+    "-o",
+    "ConnectTimeout=30"
+  ],
+  "owner_label": "xiaoqingguo",
+  "default_quota_gb": 600,
+  "command_timeout_seconds": 600,
+  "history_limit": 400,
+  "publish_command": "\"{python}\" \"scripts\\publish_github_pages.py\"",
+  "paths": [
+    {
+      "label": "Rongkun",
+      "path": "/home/xiaoqingguo/Rongkun"
+    },
+    {
+      "label": "yuewang",
+      "path": "/home/xiaoqingguo/yuewang"
+    },
+    {
+      "label": "Hxchen",
+      "path": "/home/xiaoqingguo/Hxchen"
+    }
+  ]
+}
