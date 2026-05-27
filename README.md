@@ -57,6 +57,12 @@ Serve existing data and wait for the next scheduled run:
 conda run -n storage-monitor python .\monitor.py --no-initial-run
 ```
 
+Run one refresh and exit:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File E:\CODE\Storage-Monitor\scripts\refresh_once.ps1
+```
+
 ## Configure
 
 Edit `config.json`.
@@ -127,16 +133,17 @@ Example with `rclone`:
 
 ## Keep it running on Windows
 
-Use Task Scheduler to run:
+For GitHub Pages publishing, a long-running local web server is not required. Use Task Scheduler to run one refresh each day:
 
 ```powershell
-C:\Users\csrkzhu\miniconda3\envs\storage-monitor\python.exe E:\CODE\Storage-Monitor\monitor.py
+schtasks /Create /TN "Storage Monitor Refresh" /SC DAILY /ST 08:00 /TR "powershell.exe -NoProfile -ExecutionPolicy Bypass -File E:\CODE\Storage-Monitor\scripts\refresh_once.ps1" /F
 ```
 
-Set the working directory to:
+The task runs:
 
-```text
-E:\CODE\Storage-Monitor
-```
+- `ssh h20b` collection,
+- local JSON update,
+- Git commit and push to GitHub,
+- GitHub Pages redeploy.
 
 Use an account that can run `ssh h20b` without interactive password prompts.
