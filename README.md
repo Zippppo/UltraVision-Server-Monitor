@@ -39,7 +39,7 @@ http://localhost:8090
 By default the service:
 
 - collects once immediately at startup,
-- collects again every day at `08:00` local time,
+- can run as a scheduled one-shot refresh, currently every 2 hours via Windows Task Scheduler,
 - serves the dashboard on `0.0.0.0:8090`,
 - shows each folder against a `600 GB` quota,
 - shows `xiaoqingguo` total usage and remaining remote disk space,
@@ -133,10 +133,10 @@ Example with `rclone`:
 
 ## Keep it running on Windows
 
-For GitHub Pages publishing, a long-running local web server is not required. Use Task Scheduler to run one refresh each day:
+For GitHub Pages publishing, a long-running local web server is not required. Use Task Scheduler to run one refresh every 2 hours:
 
 ```powershell
-schtasks /Create /TN "Storage Monitor Refresh" /SC DAILY /ST 08:00 /TR "powershell.exe -NoProfile -ExecutionPolicy Bypass -File E:\CODE\Storage-Monitor\scripts\refresh_once.ps1" /F
+schtasks /Create /TN "Storage Monitor Refresh" /SC HOURLY /MO 2 /ST 00:00 /TR "powershell.exe -NoProfile -ExecutionPolicy Bypass -File E:\CODE\Storage-Monitor\scripts\refresh_once.ps1" /F
 ```
 
 The task runs:
