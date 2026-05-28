@@ -199,7 +199,7 @@ main {
 }
 
 .gpu-table {
-  min-width: 900px;
+  min-width: 980px;
   border-collapse: collapse;
 }
 
@@ -282,6 +282,53 @@ main {
   font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
   font-size: 0.86rem;
   font-weight: 800;
+}
+
+.gpu-owner-cell {
+  width: 96px;
+  min-width: 96px;
+  max-width: 120px;
+}
+
+.owner-pill {
+  display: inline-flex;
+  align-items: center;
+  min-width: 58px;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 0.75rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.owner-ours {
+  color: var(--green);
+  border-color: #b8dfc5;
+  background: #eef9f1;
+}
+
+.owner-other {
+  color: var(--red);
+  border-color: #efb4b4;
+  background: #fff1f1;
+}
+
+.owner-free {
+  color: var(--green);
+  border-color: #b8dfc5;
+  background: #eef9f1;
+}
+
+.owner-user {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 750;
+  overflow-wrap: anywhere;
 }
 
 .total-overview {

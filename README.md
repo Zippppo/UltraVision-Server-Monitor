@@ -75,6 +75,7 @@ Important fields:
 - `default_quota_gb`: default quota per monitored folder. It is currently `600`.
 - `collect_gpus`: collect per-GPU metrics with `nvidia-smi`. It is currently `true`.
 - `exclude_gpu_indices`: GPU indices to hide from monitoring. It currently excludes `7`.
+- `owned_process_root`: GPU compute processes whose current working directory is under this path are labeled `OURS`; other/unknown process roots are labeled `OTHER`.
 - `run_at`: daily collection time in `HH:MM` local time.
 - `bind`: use `0.0.0.0` for access from other machines on the same network.
 - `port`: dashboard port.

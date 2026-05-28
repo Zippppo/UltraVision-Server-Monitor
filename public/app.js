@@ -114,6 +114,24 @@ function formatPercent(value) {
   return Number.isFinite(value) ? `${value.toFixed(0)}%` : "-";
 }
 
+function gpuOwnerStatus(gpu) {
+  const status = String(gpu.owner_status || "").toLowerCase();
+  if (status === "ours" || status === "other" || status === "free") {
+    return status;
+  }
+  return Number(gpu.process_count) > 0 ? "other" : "free";
+}
+
+function gpuOwnerLabel(status) {
+  if (status === "ours") {
+    return "OURS";
+  }
+  if (status === "other") {
+    return "OTHER";
+  }
+  return "EMPTY";
+}
+
 function renderTotalOverview() {
   const container = byId("totalOverview");
   const summary = state.latest?.filesystem_summary || {};
@@ -163,11 +181,19 @@ function renderGpus() {
   const memoryPercent = memoryTotal > 0 ? (memoryUsed / memoryTotal) * 100 : null;
   const avgUtil = utilValues.length ? utilValues.reduce((sum, value) => sum + value, 0) / utilValues.length : null;
   const maxUtil = utilValues.length ? Math.max(...utilValues) : null;
+  const ownerRoot = state.latest?.owned_process_root || "/home/xiaoqingguo/";
+  const ownerCounts = gpus.reduce(
+    (counts, gpu) => {
+      counts[gpuOwnerStatus(gpu)] += 1;
+      return counts;
+    },
+    { ours: 0, other: 0, free: 0 },
+  );
   const excluded = Array.isArray(summary.excluded_indices) && summary.excluded_indices.length
     ? `Excluded GPU ${summary.excluded_indices.join(", ")}`
     : "No GPUs excluded";
 
-  hint.textContent = `${gpus.length} GPUs counted; ${activeCount} active. ${excluded}.`;
+  hint.textContent = `${gpus.length} GPUs counted; ${activeCount} active; ${ownerCounts.ours} ours, ${ownerCounts.other} other, ${ownerCounts.free} empty. Owned root: ${ownerRoot}. ${excluded}.`;
 
   const rows = [...gpus]
     .sort((a, b) => Number(a.index) - Number(b.index))
@@ -183,8 +209,14 @@ function renderGpus() {
         ? `${gpu.power_limit_watts.toFixed(0)} W limit`
         : "";
       const tempClass = Number(gpu.temperature_c) >= 80 ? "status-error" : Number(gpu.temperature_c) >= 70 ? "status-warn" : "status-muted";
+      const ownerStatus = gpuOwnerStatus(gpu);
+      const ownerUser = String(gpu.owner_user || "").trim();
       return `
         <tr>
+          <td class="gpu-owner-cell">
+            <span class="owner-pill owner-${escapeHtml(ownerStatus)}">${escapeHtml(gpuOwnerLabel(ownerStatus))}</span>
+            ${ownerUser ? `<span class="owner-user">${escapeHtml(ownerUser)}</span>` : ""}
+          </td>
           <td>
             <span class="gpu-id">GPU ${escapeHtml(gpu.index ?? "-")}</span>
           </td>
@@ -246,6 +278,7 @@ function renderGpus() {
         <table class="gpu-table">
           <thead>
             <tr>
+              <th>Owner</th>
               <th>ID</th>
               <th>Device</th>
               <th>GPU</th>

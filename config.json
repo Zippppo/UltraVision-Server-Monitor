@@ -10,6 +10,7 @@
     "ConnectTimeout=30"
   ],
   "owner_label": "xiaoqingguo",
+  "owned_process_root": "/home/xiaoqingguo/",
   "default_quota_gb": 600,
   "collect_gpus": true,
   "exclude_gpu_indices": [
