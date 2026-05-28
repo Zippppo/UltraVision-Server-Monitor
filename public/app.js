@@ -410,41 +410,6 @@ function renderHeader() {
   byId("subtitle").textContent = `${latest.host || "h20b"} updated at ${generatedAt}`;
 }
 
-function renderTable() {
-  const rows = [];
-  for (const snapshot of [...state.history].reverse()) {
-    for (const item of snapshot.paths || []) {
-      rows.push({ snapshot, item });
-    }
-  }
-
-  const body = byId("historyRows");
-  if (!rows.length) {
-    body.innerHTML = `<tr><td colspan="6">No history yet.</td></tr>`;
-    return;
-  }
-
-  body.innerHTML = rows
-    .slice(0, 30)
-    .map(({ snapshot, item }) => {
-      const fs = Number.isFinite(item.filesystem_use_percent)
-        ? `${item.filesystem_use_percent.toFixed(0)}% on ${item.mountpoint || "-"}`
-        : "-";
-      const displayStatus = item.status === "ok" ? (item.quota_status || "ok") : (item.status || "unknown");
-      return `
-        <tr>
-          <td>${escapeHtml(formatTime(snapshot.generated_at))}</td>
-          <td>${escapeHtml(item.label)}</td>
-          <td><code>${escapeHtml(item.path)}</code></td>
-          <td>${escapeHtml(item.human || formatBytes(item.bytes))}</td>
-          <td>${escapeHtml(fs)}</td>
-          <td><span class="pill ${statusClass(displayStatus)}">${escapeHtml(displayStatus)}</span></td>
-        </tr>
-      `;
-    })
-    .join("");
-}
-
 function trendHistory() {
   const cutoff = Date.now() - state.trendDays * 24 * 60 * 60 * 1000;
   return state.history
@@ -564,7 +529,6 @@ function render() {
   renderCards();
   renderTotalOverview();
   renderGpus();
-  renderTable();
   drawChart();
 }
 
