@@ -285,9 +285,9 @@ main {
 }
 
 .gpu-owner-cell {
-  width: 96px;
-  min-width: 96px;
-  max-width: 120px;
+  width: 118px;
+  min-width: 118px;
+  max-width: 132px;
 }
 
 .owner-pill {
@@ -328,7 +328,7 @@ main {
   font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
   font-size: 0.72rem;
   font-weight: 750;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 
 .total-overview {
