@@ -402,10 +402,6 @@ function renderCards() {
 
 function renderHeader() {
   const latest = state.latest || {};
-  const status = latest.status || "no_data";
-  byId("overallStatus").className = `status-badge ${statusClass(status)}`;
-  byId("overallStatus").textContent = status.replace("_", " ");
-
   const generatedAt = latest.generated_at ? formatTime(latest.generated_at) : "not collected yet";
   byId("subtitle").textContent = `${latest.host || "h20b"} updated at ${generatedAt}`;
 }
