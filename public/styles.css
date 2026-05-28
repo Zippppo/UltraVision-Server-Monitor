@@ -444,6 +444,47 @@ main {
   margin-bottom: 14px;
 }
 
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.segmented-control {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.segment-button {
+  min-height: 36px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  padding: 0 12px;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.segment-button:first-child {
+  border-left: 0;
+}
+
+.segment-button.active {
+  color: var(--blue);
+  background: #eef4ff;
+}
+
+.segment-button:hover {
+  color: var(--text);
+  background: #eef2f8;
+}
+
 .icon-button {
   min-height: 36px;
   border: 1px solid var(--line);
@@ -538,6 +579,11 @@ td code {
 
   .gpu-stat-strip {
     grid-template-columns: 1fr;
+  }
+
+  .panel-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   canvas {

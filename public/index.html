@@ -30,15 +30,21 @@
         <div id="gpuOverview" class="gpu-overview"></div>
       </section>
 
-      <section class="tool-panel" aria-label="Usage trend">
+      <section class="tool-panel" aria-label="GPU occupancy trend">
         <div class="panel-head">
           <div>
-            <h2>Daily trend</h2>
-            <p id="chartHint" class="muted">History will appear after scheduled runs.</p>
+            <h2>GPU occupancy trend</h2>
+            <p id="chartHint" class="muted">GPU history will appear after scheduled runs.</p>
           </div>
-          <button id="refreshButton" class="icon-button" type="button" title="Refresh now" aria-label="Refresh now">
-            <span aria-hidden="true">Refresh</span>
-          </button>
+          <div class="panel-actions">
+            <div class="segmented-control" role="group" aria-label="Trend range">
+              <button class="segment-button active" type="button" data-trend-days="7">7 days</button>
+              <button class="segment-button" type="button" data-trend-days="30">30 days</button>
+            </div>
+            <button id="refreshButton" class="icon-button" type="button" title="Refresh now" aria-label="Refresh now">
+              <span aria-hidden="true">Refresh</span>
+            </button>
+          </div>
         </div>
         <canvas id="trendCanvas" height="320"></canvas>
       </section>

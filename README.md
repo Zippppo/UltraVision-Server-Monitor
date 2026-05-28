@@ -43,7 +43,7 @@ By default the service:
 - serves the dashboard on `0.0.0.0:8090`,
 - shows each folder against a `600 GB` quota,
 - shows `xiaoqingguo` total usage and remaining remote disk space,
-- shows aggregate GPU utilization and memory when `nvidia-smi` is available,
+- shows aggregate GPU utilization, owner status, and recent GPU occupancy trend when `nvidia-smi` is available,
 - writes data to `public\data\latest.json` and `public\data\history.json`.
 
 Run a single collection without starting the web server:
@@ -77,6 +77,7 @@ Important fields:
 - `exclude_gpu_indices`: GPU indices to hide from monitoring. It currently excludes `7`.
 - `owned_process_root`: GPU compute processes whose current working directory is under this path are labeled `OURS`; other/unknown process roots are labeled `OTHER`.
 - `run_at`: daily collection time in `HH:MM` local time.
+- `history_retention_days`: maximum age of saved trend/history snapshots. It is currently `30`.
 - `bind`: use `0.0.0.0` for access from other machines on the same network.
 - `port`: dashboard port.
 - `publish_command`: optional command that runs after each successful local data write.

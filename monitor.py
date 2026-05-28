@@ -28,6 +28,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "exclude_gpu_indices": [7],
     "command_timeout_seconds": 600,
     "history_limit": 400,
+    "history_retention_days": 30,
     "publish_command": "",
     "paths": [
         {"label": "Rongkun", "path": "/home/xiaoqingguo/Rongkun"},
@@ -631,9 +632,22 @@ def load_history() -> list[dict[str, Any]]:
     return data if isinstance(data, list) else []
 
 
-def append_history(snapshot: dict[str, Any], limit: int) -> None:
+def append_history(snapshot: dict[str, Any], limit: int, retention_days: int) -> None:
     history = load_history()
     history.append(snapshot)
+    if retention_days > 0:
+        cutoff = datetime.now().astimezone() - timedelta(days=retention_days)
+        retained = []
+        for item in history:
+            generated_at = item.get("generated_at")
+            try:
+                generated_at_dt = datetime.fromisoformat(str(generated_at))
+            except ValueError:
+                retained.append(item)
+                continue
+            if generated_at_dt >= cutoff:
+                retained.append(item)
+        history = retained
     if limit > 0:
         history = history[-limit:]
     write_json_atomic(HISTORY_PATH, history)
@@ -679,7 +693,11 @@ def run_once(config: dict[str, Any]) -> dict[str, Any]:
     log(f"Collecting storage usage from {config['ssh_host']}")
     snapshot = build_snapshot(config)
     write_json_atomic(LATEST_PATH, snapshot)
-    append_history(snapshot, int(config.get("history_limit", 400)))
+    append_history(
+        snapshot,
+        int(config.get("history_limit", 400)),
+        int(config.get("history_retention_days", 30)),
+    )
     publish_if_configured(config)
     log(f"Collection finished with status: {snapshot['status']}")
     return snapshot

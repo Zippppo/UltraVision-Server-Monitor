@@ -5,6 +5,7 @@ const colors = ["#2563eb", "#16803c", "#b45309", "#0f766e", "#6d28d9", "#c62828"
 const state = {
   latest: null,
   history: [],
+  trendDays: 7,
 };
 
 function byId(id) {
@@ -47,6 +48,22 @@ function formatTime(value) {
   }
   return date.toLocaleString(undefined, {
     year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatShortTime(value) {
+  if (!value) {
+    return "-";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleString(undefined, {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
@@ -130,6 +147,35 @@ function gpuOwnerLabel(status) {
     return "OTHER";
   }
   return "EMPTY";
+}
+
+function gpuIsOccupied(gpu) {
+  const processCount = Number(gpu.process_count);
+  if (Number.isFinite(processCount)) {
+    return processCount > 0;
+  }
+  const status = gpuOwnerStatus(gpu);
+  if (status === "ours" || status === "other") {
+    return true;
+  }
+  if (status === "free") {
+    return false;
+  }
+  const util = Number(gpu.gpu_util_percent);
+  if (Number.isFinite(util) && util > 0) {
+    return true;
+  }
+  const memoryUsed = Number(gpu.memory_used_bytes);
+  return Number.isFinite(memoryUsed) && memoryUsed > 512 * 1024 * 1024;
+}
+
+function gpuOccupancyPoint(snapshot) {
+  const gpus = Array.isArray(snapshot?.gpu_summary?.items) ? snapshot.gpu_summary.items : [];
+  return {
+    time: snapshot.generated_at,
+    occupied: gpus.filter(gpuIsOccupied).length,
+    total: gpus.length,
+  };
 }
 
 function renderTotalOverview() {
@@ -389,28 +435,15 @@ function renderTable() {
     .join("");
 }
 
-function seriesFromHistory() {
-  const names = new Map();
-  for (const item of state.latest?.paths || []) {
-    names.set(pathKey(item), item.label || item.path);
-  }
-  for (const snapshot of state.history) {
-    for (const item of snapshot.paths || []) {
-      names.set(pathKey(item), item.label || item.path);
-    }
-  }
-
-  return [...names.entries()].map(([key, label], index) => {
-    const points = state.history.map((snapshot, snapshotIndex) => {
-      const match = (snapshot.paths || []).find((candidate) => pathKey(candidate) === key);
-      return {
-        index: snapshotIndex,
-        time: snapshot.generated_at,
-        value: match && Number.isFinite(match.bytes) ? match.bytes : null,
-      };
-    });
-    return { key, label, color: colors[index % colors.length], points };
-  });
+function trendHistory() {
+  const cutoff = Date.now() - state.trendDays * 24 * 60 * 60 * 1000;
+  return state.history
+    .filter((snapshot) => {
+      const time = new Date(snapshot.generated_at).getTime();
+      return Number.isFinite(time) && time >= cutoff;
+    })
+    .map(gpuOccupancyPoint)
+    .filter((point) => Number.isFinite(point.occupied) && Number.isFinite(point.total) && point.total > 0);
 }
 
 function drawChart() {
@@ -426,28 +459,30 @@ function drawChart() {
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   ctx.clearRect(0, 0, width, height);
 
-  const series = seriesFromHistory();
-  const values = series.flatMap((item) => item.points.map((point) => point.value)).filter(Number.isFinite);
+  const points = trendHistory();
+  const values = points.map((point) => point.occupied).filter(Number.isFinite);
   const chartHint = byId("chartHint");
 
   if (!values.length) {
-    chartHint.textContent = "History will appear after scheduled runs.";
+    chartHint.textContent = `No GPU history in the last ${state.trendDays} days.`;
     ctx.fillStyle = "#667085";
     ctx.font = "14px system-ui, sans-serif";
-    ctx.fillText("No trend data yet", 24, 42);
+    ctx.fillText("No GPU trend data yet", 24, 42);
     return;
   }
 
-  chartHint.textContent = `${state.history.length} snapshots in local history.`;
+  const latest = points[points.length - 1];
+  chartHint.textContent = `${points.length} checks in the last ${state.trendDays} days; latest ${latest.occupied} / ${latest.total} GPUs occupied.`;
 
-  const left = 64;
+  const left = 48;
   const right = 22;
   const top = 28;
   const bottom = 46;
   const innerWidth = width - left - right;
   const innerHeight = height - top - bottom;
-  const maxValue = Math.max(...values) * 1.08 || 1;
-  const sampleCount = Math.max(1, state.history.length);
+  const maxGpuCount = Math.max(...points.map((point) => point.total), ...values, 1);
+  const maxValue = Math.max(1, Math.ceil(maxGpuCount));
+  const sampleCount = Math.max(1, points.length);
 
   ctx.strokeStyle = "#d9dee7";
   ctx.lineWidth = 1;
@@ -459,61 +494,59 @@ function drawChart() {
 
   ctx.fillStyle = "#667085";
   ctx.font = "12px system-ui, sans-serif";
-  for (let tick = 0; tick <= 4; tick += 1) {
-    const value = (maxValue / 4) * tick;
+  const tickCount = Math.min(4, maxValue);
+  for (let tick = 0; tick <= tickCount; tick += 1) {
+    const value = Math.round((maxValue / tickCount) * tick);
     const y = top + innerHeight - (value / maxValue) * innerHeight;
     ctx.strokeStyle = "#edf0f5";
     ctx.beginPath();
     ctx.moveTo(left, y);
     ctx.lineTo(left + innerWidth, y);
     ctx.stroke();
-    ctx.fillText(formatBytes(value), 8, y + 4);
+    ctx.fillText(String(value), 18, y + 4);
   }
 
-  for (const item of series) {
-    ctx.strokeStyle = item.color;
-    ctx.fillStyle = item.color;
-    ctx.lineWidth = 2;
+  ctx.strokeStyle = colors[0];
+  ctx.fillStyle = colors[0];
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  points.forEach((point, pointIndex) => {
+    const x = sampleCount === 1 ? left + innerWidth / 2 : left + (pointIndex / (sampleCount - 1)) * innerWidth;
+    const y = top + innerHeight - (point.occupied / maxValue) * innerHeight;
+    if (pointIndex === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  });
+  ctx.stroke();
+
+  points.forEach((point, pointIndex) => {
+    const x = sampleCount === 1 ? left + innerWidth / 2 : left + (pointIndex / (sampleCount - 1)) * innerWidth;
+    const y = top + innerHeight - (point.occupied / maxValue) * innerHeight;
     ctx.beginPath();
-    let started = false;
-    for (const point of item.points) {
-      if (!Number.isFinite(point.value)) {
-        started = false;
-        continue;
-      }
-      const x = sampleCount === 1 ? left + innerWidth / 2 : left + (point.index / (sampleCount - 1)) * innerWidth;
-      const y = top + innerHeight - (point.value / maxValue) * innerHeight;
-      if (!started) {
-        ctx.moveTo(x, y);
-        started = true;
-      } else {
-        ctx.lineTo(x, y);
-      }
-    }
-    ctx.stroke();
+    ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
 
-    for (const point of item.points) {
-      if (!Number.isFinite(point.value)) {
-        continue;
-      }
-      const x = sampleCount === 1 ? left + innerWidth / 2 : left + (point.index / (sampleCount - 1)) * innerWidth;
-      const y = top + innerHeight - (point.value / maxValue) * innerHeight;
-      ctx.beginPath();
-      ctx.arc(x, y, 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  let legendX = left;
-  const legendY = height - 16;
+  const labelPoints = points.length === 1 ? [points[0]] : [points[0], points[points.length - 1]];
+  ctx.fillStyle = "#667085";
   ctx.font = "12px system-ui, sans-serif";
-  for (const item of series) {
-    ctx.fillStyle = item.color;
-    ctx.fillRect(legendX, legendY - 9, 10, 10);
-    ctx.fillStyle = "#172033";
-    ctx.fillText(item.label, legendX + 16, legendY);
-    legendX += ctx.measureText(item.label).width + 46;
+  for (const point of labelPoints) {
+    const pointIndex = points.indexOf(point);
+    const x = sampleCount === 1 ? left + innerWidth / 2 : left + (pointIndex / (sampleCount - 1)) * innerWidth;
+    const text = formatShortTime(point.time);
+    const offset = pointIndex === points.length - 1 ? -ctx.measureText(text).width : 0;
+    ctx.fillText(text, x + offset, height - 18);
   }
+
+  const legendX = left;
+  const legendY = height - 18;
+  ctx.font = "12px system-ui, sans-serif";
+  ctx.fillStyle = colors[0];
+  ctx.fillRect(legendX, legendY - 9, 10, 10);
+  ctx.fillStyle = "#172033";
+  ctx.fillText("Occupied GPUs", legendX + 16, legendY);
 }
 
 function render() {
@@ -523,6 +556,22 @@ function render() {
   renderGpus();
   renderTable();
   drawChart();
+}
+
+function setupTrendControls() {
+  document.querySelectorAll("[data-trend-days]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const days = Number(button.dataset.trendDays);
+      if (!Number.isFinite(days)) {
+        return;
+      }
+      state.trendDays = days;
+      document.querySelectorAll("[data-trend-days]").forEach((candidate) => {
+        candidate.classList.toggle("active", candidate === button);
+      });
+      drawChart();
+    });
+  });
 }
 
 async function loadData() {
@@ -544,6 +593,7 @@ async function loadData() {
 }
 
 window.addEventListener("resize", drawChart);
+setupTrendControls();
 byId("refreshButton").addEventListener("click", loadData);
 loadData();
 setInterval(loadData, 5 * 60 * 1000);

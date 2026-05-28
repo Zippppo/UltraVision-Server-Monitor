@@ -18,6 +18,7 @@
   ],
   "command_timeout_seconds": 600,
   "history_limit": 400,
+  "history_retention_days": 30,
   "publish_command": "\"{python}\" \"scripts\\publish_github_pages.py\"",
   "paths": [
     {
