@@ -275,14 +275,15 @@ function renderGpus() {
               <span class="gpu-bar-value">${escapeHtml(formatPercent(gpuUtil))}</span>
             </div>
             <div class="gpu-bar"><span class="${progressClass(gpuUtil)}" style="width: ${gpuWidth}%"></span></div>
+            <span class="gpu-subtle">Current GPU load</span>
           </td>
           <td class="gpu-bar-cell">
             <div class="gpu-bar-head">
-              <span class="gpu-bar-label">${escapeHtml(formatBytes(gpu.memory_used_bytes))}</span>
+              <span class="gpu-bar-label">Memory</span>
               <span class="gpu-bar-value">${escapeHtml(formatPercent(memoryUsedPercent))}</span>
             </div>
             <div class="gpu-bar"><span class="${progressClass(memoryUsedPercent)}" style="width: ${memoryWidth}%"></span></div>
-            <span class="gpu-subtle">of ${escapeHtml(formatBytes(gpu.memory_total_bytes))}</span>
+            <span class="gpu-subtle">${escapeHtml(formatBytes(gpu.memory_used_bytes))} / ${escapeHtml(formatBytes(gpu.memory_total_bytes))}</span>
           </td>
           <td>
             <span class="pill ${tempClass}">${escapeHtml(Number.isFinite(gpu.temperature_c) ? `${gpu.temperature_c.toFixed(0)} C` : "-")}</span>
@@ -322,6 +323,15 @@ function renderGpus() {
       </div>
       <div class="gpu-table-wrap">
         <table class="gpu-table">
+          <colgroup>
+            <col class="gpu-col-owner">
+            <col class="gpu-col-id">
+            <col class="gpu-col-device">
+            <col class="gpu-col-metric">
+            <col class="gpu-col-metric">
+            <col class="gpu-col-temp">
+            <col class="gpu-col-power">
+          </colgroup>
           <thead>
             <tr>
               <th>Owner</th>
@@ -476,7 +486,7 @@ function drawChart() {
 
   const left = 48;
   const right = 22;
-  const top = 28;
+  const top = 42;
   const bottom = 46;
   const innerWidth = width - left - right;
   const innerHeight = height - top - bottom;
@@ -541,7 +551,7 @@ function drawChart() {
   }
 
   const legendX = left;
-  const legendY = height - 18;
+  const legendY = 22;
   ctx.font = "12px system-ui, sans-serif";
   ctx.fillStyle = colors[0];
   ctx.fillRect(legendX, legendY - 9, 10, 10);

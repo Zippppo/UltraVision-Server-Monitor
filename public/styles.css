@@ -199,8 +199,33 @@ main {
 }
 
 .gpu-table {
-  min-width: 980px;
+  min-width: 1040px;
   border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.gpu-col-owner {
+  width: 118px;
+}
+
+.gpu-col-id {
+  width: 82px;
+}
+
+.gpu-col-device {
+  width: 158px;
+}
+
+.gpu-col-metric {
+  width: 238px;
+}
+
+.gpu-col-temp {
+  width: 92px;
+}
+
+.gpu-col-power {
+  width: 114px;
 }
 
 .gpu-table th,
@@ -234,7 +259,7 @@ main {
 }
 
 .gpu-bar-cell {
-  min-width: 180px;
+  min-width: 0;
 }
 
 .gpu-bar-head {
