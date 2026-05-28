@@ -318,7 +318,7 @@ def query(fields, query_type):
 def is_owned_cwd(cwd):
     cwd = str(cwd or "").strip()
     owned_root = OWNED_PROCESS_ROOT.rstrip("/")
-    return cwd == owned_root or cwd.startswith(OWNED_PROCESS_ROOT)
+    return cwd == owned_root or cwd.startswith(f"{owned_root}/")
 
 
 def enrich_processes(processes):
@@ -496,10 +496,27 @@ def collect_gpus(
             if owner_status == "other"
             else normalized_processes
         )
-        owner_user = next(
-            (proc["user"] for proc in owner_processes if proc.get("user")),
-            "",
+        owner_candidates = sorted(
+            owner_processes,
+            key=lambda proc: proc.get("used_memory_bytes") or 0,
+            reverse=True,
         )
+        if owner_status == "ours":
+            owner_user = next(
+                (
+                    display_name
+                    for proc in owner_candidates
+                    if (display_name := owned_process_display_name(proc.get("cwd", ""), owned_process_root))
+                ),
+                "",
+            )
+        else:
+            owner_user = ""
+        if not owner_user:
+            owner_user = next(
+                (proc["user"] for proc in owner_candidates if proc.get("user")),
+                "",
+            )
 
         gpus.append(
             {
@@ -526,6 +543,22 @@ def collect_gpus(
         result["status"] = "unavailable"
         result["error"] = "nvidia-smi returned no GPU rows"
     return result
+
+
+def owned_process_display_name(cwd: str, owned_process_root: str) -> str:
+    cwd = str(cwd or "").strip()
+    owned_root = str(owned_process_root or "").strip().rstrip("/")
+    if not cwd or not owned_root or cwd == owned_root:
+        return ""
+
+    prefix = f"{owned_root}/"
+    if not cwd.startswith(prefix):
+        return ""
+
+    relative = cwd[len(prefix) :].strip("/")
+    if not relative:
+        return ""
+    return relative.split("/", 1)[0]
 
 
 def build_filesystem_summary(results: list[dict[str, Any]]) -> dict[str, Any]:
