@@ -3925,5 +3925,216 @@
         "error": null
       }
     ]
+  },
+  {
+    "generated_at": "2026-05-28T22:00:15+08:00",
+    "host": "h20b",
+    "owner_label": "xiaoqingguo",
+    "default_quota_gb": 600,
+    "filesystem_summary": {
+      "total_size_bytes": 3779172614144,
+      "total_used_bytes": 3341204664320,
+      "total_available_bytes": 245919997952,
+      "max_use_percent": 94.0,
+      "filesystems": [
+        {
+          "filesystem": "/dev/mapper/vg_data-lv_storage",
+          "mountpoint": "/home",
+          "size_bytes": 3779172614144,
+          "used_bytes": 3341204664320,
+          "available_bytes": 245919997952,
+          "use_percent": 94.0,
+          "paths": [
+            "Rongkun",
+            "yuewang",
+            "Hxchen"
+          ]
+        }
+      ]
+    },
+    "gpu_summary": {
+      "status": "ok",
+      "items": [
+        {
+          "index": 0,
+          "name": "NVIDIA H20",
+          "uuid": "GPU-16b5067f-5ba4-8eba-8f4c-760a51d8a184",
+          "gpu_util_percent": 100.0,
+          "memory_util_percent": 16.0,
+          "memory_total_bytes": 102625181696,
+          "memory_used_bytes": 98582921216,
+          "memory_free_bytes": 3534749696,
+          "memory_used_percent": 96.06,
+          "temperature_c": 50.0,
+          "power_draw_watts": 347.23,
+          "power_limit_watts": 500.0
+        },
+        {
+          "index": 1,
+          "name": "NVIDIA H20",
+          "uuid": "GPU-65b09b75-a2c7-cf7a-ac7e-1ed20bd552f3",
+          "gpu_util_percent": 32.0,
+          "memory_util_percent": 6.0,
+          "memory_total_bytes": 102625181696,
+          "memory_used_bytes": 84712357888,
+          "memory_free_bytes": 17406361600,
+          "memory_used_percent": 82.55,
+          "temperature_c": 33.0,
+          "power_draw_watts": 147.8,
+          "power_limit_watts": 500.0
+        },
+        {
+          "index": 2,
+          "name": "NVIDIA H20",
+          "uuid": "GPU-da81151b-3f33-2854-174c-2356387a9daa",
+          "gpu_util_percent": 100.0,
+          "memory_util_percent": 14.0,
+          "memory_total_bytes": 102625181696,
+          "memory_used_bytes": 98564046848,
+          "memory_free_bytes": 3554672640,
+          "memory_used_percent": 96.04,
+          "temperature_c": 46.0,
+          "power_draw_watts": 345.84,
+          "power_limit_watts": 500.0
+        },
+        {
+          "index": 3,
+          "name": "NVIDIA H20",
+          "uuid": "GPU-b5739a44-79f8-b94b-545c-ee5b1933690f",
+          "gpu_util_percent": 100.0,
+          "memory_util_percent": 1.0,
+          "memory_total_bytes": 102625181696,
+          "memory_used_bytes": 98564046848,
+          "memory_free_bytes": 3554672640,
+          "memory_used_percent": 96.04,
+          "temperature_c": 57.0,
+          "power_draw_watts": 349.43,
+          "power_limit_watts": 500.0
+        },
+        {
+          "index": 4,
+          "name": "NVIDIA H20",
+          "uuid": "GPU-569ee45c-88f9-5c42-caca-949eb574c3ae",
+          "gpu_util_percent": 100.0,
+          "memory_util_percent": 17.0,
+          "memory_total_bytes": 102625181696,
+          "memory_used_bytes": 98564046848,
+          "memory_free_bytes": 3554672640,
+          "memory_used_percent": 96.04,
+          "temperature_c": 56.0,
+          "power_draw_watts": 339.14,
+          "power_limit_watts": 500.0
+        },
+        {
+          "index": 5,
+          "name": "NVIDIA H20",
+          "uuid": "GPU-d3d0957a-25f4-83e5-7347-a5f7fa1a7188",
+          "gpu_util_percent": 76.0,
+          "memory_util_percent": 19.0,
+          "memory_total_bytes": 102625181696,
+          "memory_used_bytes": 92356476928,
+          "memory_free_bytes": 9762242560,
+          "memory_used_percent": 89.99,
+          "temperature_c": 44.0,
+          "power_draw_watts": 266.53,
+          "power_limit_watts": 500.0
+        },
+        {
+          "index": 6,
+          "name": "NVIDIA H20",
+          "uuid": "GPU-3c33765f-750c-9608-5f4b-b5fea9934828",
+          "gpu_util_percent": 85.0,
+          "memory_util_percent": 24.0,
+          "memory_total_bytes": 102625181696,
+          "memory_used_bytes": 88139104256,
+          "memory_free_bytes": 13979615232,
+          "memory_used_percent": 85.88,
+          "temperature_c": 50.0,
+          "power_draw_watts": 318.85,
+          "power_limit_watts": 500.0
+        },
+        {
+          "index": 8,
+          "name": "NVIDIA H20",
+          "uuid": "GPU-1ce2b23e-8b4d-17e3-d945-34a93fe4df04",
+          "gpu_util_percent": 33.0,
+          "memory_util_percent": 6.0,
+          "memory_total_bytes": 102625181696,
+          "memory_used_bytes": 86205530112,
+          "memory_free_bytes": 15913189376,
+          "memory_used_percent": 84.0,
+          "temperature_c": 32.0,
+          "power_draw_watts": 148.21,
+          "power_limit_watts": 500.0
+        }
+      ],
+      "excluded_indices": [
+        7
+      ],
+      "error": null
+    },
+    "status": "quota_exceeded",
+    "paths": [
+      {
+        "label": "Rongkun",
+        "path": "/home/xiaoqingguo/Rongkun",
+        "status": "ok",
+        "quota_status": "ok",
+        "quota_bytes": 644245094400,
+        "quota_human": "600.00 GB",
+        "quota_used_percent": 12.88,
+        "quota_remaining_bytes": 561292095631,
+        "quota_over_bytes": 0,
+        "bytes": 82952998769,
+        "human": "78G",
+        "filesystem": "/dev/mapper/vg_data-lv_storage",
+        "filesystem_size_bytes": 3779172614144,
+        "filesystem_used_bytes": 3341204664320,
+        "filesystem_available_bytes": 245919997952,
+        "filesystem_use_percent": 94.0,
+        "mountpoint": "/home",
+        "error": null
+      },
+      {
+        "label": "yuewang",
+        "path": "/home/xiaoqingguo/yuewang",
+        "status": "ok",
+        "quota_status": "over_quota",
+        "quota_bytes": 644245094400,
+        "quota_human": "600.00 GB",
+        "quota_used_percent": 184.89,
+        "quota_remaining_bytes": -546929668370,
+        "quota_over_bytes": 546929668370,
+        "bytes": 1191174762770,
+        "human": "1.1T",
+        "filesystem": "/dev/mapper/vg_data-lv_storage",
+        "filesystem_size_bytes": 3779172614144,
+        "filesystem_used_bytes": 3341204422656,
+        "filesystem_available_bytes": 245920239616,
+        "filesystem_use_percent": 94.0,
+        "mountpoint": "/home",
+        "error": null
+      },
+      {
+        "label": "Hxchen",
+        "path": "/home/xiaoqingguo/Hxchen",
+        "status": "ok",
+        "quota_status": "ok",
+        "quota_bytes": 644245094400,
+        "quota_human": "600.00 GB",
+        "quota_used_percent": 67.74,
+        "quota_remaining_bytes": 207818827981,
+        "quota_over_bytes": 0,
+        "bytes": 436426266419,
+        "human": "410G",
+        "filesystem": "/dev/mapper/vg_data-lv_storage",
+        "filesystem_size_bytes": 3779172614144,
+        "filesystem_used_bytes": 3341204422656,
+        "filesystem_available_bytes": 245920239616,
+        "filesystem_use_percent": 94.0,
+        "mountpoint": "/home",
+        "error": null
+      }
+    ]
   }
 ]
