@@ -1,20 +1,20 @@
 {
-  "generated_at": "2026-05-30T20:00:16+08:00",
+  "generated_at": "2026-05-30T22:00:14+08:00",
   "host": "h20b",
   "owner_label": "xiaoqingguo",
   "default_quota_gb": 600,
   "filesystem_summary": {
     "total_size_bytes": 3779172614144,
-    "total_used_bytes": 3341534707712,
-    "total_available_bytes": 245589954560,
+    "total_used_bytes": 3341547565056,
+    "total_available_bytes": 245577097216,
     "max_use_percent": 94.0,
     "filesystems": [
       {
         "filesystem": "/dev/mapper/vg_data-lv_storage",
         "mountpoint": "/home",
         "size_bytes": 3779172614144,
-        "used_bytes": 3341534707712,
-        "available_bytes": 245589954560,
+        "used_bytes": 3341547565056,
+        "available_bytes": 245577097216,
         "use_percent": 94.0,
         "paths": [
           "Rongkun",
@@ -38,7 +38,7 @@
         "memory_free_bytes": 102087262208,
         "memory_used_percent": 0.03,
         "temperature_c": 29.0,
-        "power_draw_watts": 71.16,
+        "power_draw_watts": 71.19,
         "power_limit_watts": 500.0
       },
       {
@@ -52,7 +52,7 @@
         "memory_free_bytes": 102107185152,
         "memory_used_percent": 0.01,
         "temperature_c": 27.0,
-        "power_draw_watts": 73.54,
+        "power_draw_watts": 73.48,
         "power_limit_watts": 500.0
       },
       {
@@ -66,7 +66,7 @@
         "memory_free_bytes": 102107185152,
         "memory_used_percent": 0.01,
         "temperature_c": 27.0,
-        "power_draw_watts": 72.51,
+        "power_draw_watts": 72.45,
         "power_limit_watts": 500.0
       },
       {
@@ -80,7 +80,7 @@
         "memory_free_bytes": 102107185152,
         "memory_used_percent": 0.01,
         "temperature_c": 29.0,
-        "power_draw_watts": 70.62,
+        "power_draw_watts": 70.65,
         "power_limit_watts": 500.0
       },
       {
@@ -93,8 +93,8 @@
         "memory_used_bytes": 11534336,
         "memory_free_bytes": 102107185152,
         "memory_used_percent": 0.01,
-        "temperature_c": 30.0,
-        "power_draw_watts": 72.18,
+        "temperature_c": 29.0,
+        "power_draw_watts": 72.03,
         "power_limit_watts": 500.0
       },
       {
@@ -108,7 +108,7 @@
         "memory_free_bytes": 102107185152,
         "memory_used_percent": 0.01,
         "temperature_c": 28.0,
-        "power_draw_watts": 72.47,
+        "power_draw_watts": 72.35,
         "power_limit_watts": 500.0
       },
       {
@@ -121,8 +121,8 @@
         "memory_used_bytes": 11534336,
         "memory_free_bytes": 102107185152,
         "memory_used_percent": 0.01,
-        "temperature_c": 30.0,
-        "power_draw_watts": 72.79,
+        "temperature_c": 29.0,
+        "power_draw_watts": 72.72,
         "power_limit_watts": 500.0
       },
       {
@@ -136,7 +136,7 @@
         "memory_free_bytes": 102107185152,
         "memory_used_percent": 0.01,
         "temperature_c": 27.0,
-        "power_draw_watts": 73.43,
+        "power_draw_watts": 73.37,
         "power_limit_watts": 500.0
       }
     ],
@@ -155,14 +155,14 @@
       "quota_bytes": 644245094400,
       "quota_human": "600.00 GB",
       "quota_used_percent": 13.87,
-      "quota_remaining_bytes": 554865409515,
+      "quota_remaining_bytes": 554865409245,
       "quota_over_bytes": 0,
-      "bytes": 89379684885,
+      "bytes": 89379685155,
       "human": "84G",
       "filesystem": "/dev/mapper/vg_data-lv_storage",
       "filesystem_size_bytes": 3779172614144,
-      "filesystem_used_bytes": 3341534707712,
-      "filesystem_available_bytes": 245589954560,
+      "filesystem_used_bytes": 3341547565056,
+      "filesystem_available_bytes": 245577097216,
       "filesystem_use_percent": 94.0,
       "mountpoint": "/home",
       "error": null
@@ -181,8 +181,8 @@
       "human": "1.1T",
       "filesystem": "/dev/mapper/vg_data-lv_storage",
       "filesystem_size_bytes": 3779172614144,
-      "filesystem_used_bytes": 3341534597120,
-      "filesystem_available_bytes": 245590065152,
+      "filesystem_used_bytes": 3341547565056,
+      "filesystem_available_bytes": 245577097216,
       "filesystem_use_percent": 94.0,
       "mountpoint": "/home",
       "error": null
@@ -195,14 +195,14 @@
       "quota_bytes": 644245094400,
       "quota_human": "600.00 GB",
       "quota_used_percent": 67.79,
-      "quota_remaining_bytes": 207494743968,
+      "quota_remaining_bytes": 207484471451,
       "quota_over_bytes": 0,
-      "bytes": 436750350432,
+      "bytes": 436760622949,
       "human": "410G",
       "filesystem": "/dev/mapper/vg_data-lv_storage",
       "filesystem_size_bytes": 3779172614144,
-      "filesystem_used_bytes": 3341534597120,
-      "filesystem_available_bytes": 245590065152,
+      "filesystem_used_bytes": 3341547671552,
+      "filesystem_available_bytes": 245576990720,
       "filesystem_use_percent": 94.0,
       "mountpoint": "/home",
       "error": null
