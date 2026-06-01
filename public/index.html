@@ -14,12 +14,9 @@
         <h1>H20B Storage Monitor</h1>
         <p id="subtitle" class="muted">Waiting for data...</p>
       </div>
-      <div id="overallStatus" class="status-badge status-muted">No data</div>
     </header>
 
     <main>
-      <section id="cards" class="metric-grid" aria-label="Folder usage"></section>
-      <section id="totalOverview" class="total-overview" aria-label="User total usage"></section>
       <section class="tool-panel" aria-label="GPU usage">
         <div class="panel-head">
           <div>
@@ -29,47 +26,28 @@
         </div>
         <div id="gpuOverview" class="gpu-overview"></div>
       </section>
+      <section id="cards" class="metric-grid" aria-label="Folder usage"></section>
+      <section id="totalOverview" class="total-overview" aria-label="User total usage"></section>
 
-      <section class="tool-panel" aria-label="Usage trend">
+      <section class="tool-panel" aria-label="GPU occupancy trend">
         <div class="panel-head">
           <div>
-            <h2>Daily trend</h2>
-            <p id="chartHint" class="muted">History will appear after scheduled runs.</p>
+            <h2>GPU occupancy trend</h2>
+            <p id="chartHint" class="muted">GPU history will appear after scheduled runs.</p>
           </div>
-          <button id="refreshButton" class="icon-button" type="button" title="Refresh now" aria-label="Refresh now">
-            <span aria-hidden="true">Refresh</span>
-          </button>
+          <div class="panel-actions">
+            <div class="segmented-control" role="group" aria-label="Trend range">
+              <button class="segment-button active" type="button" data-trend-days="7">7 days</button>
+              <button class="segment-button" type="button" data-trend-days="30">30 days</button>
+            </div>
+            <button id="refreshButton" class="icon-button" type="button" title="Refresh now" aria-label="Refresh now">
+              <span aria-hidden="true">Refresh</span>
+            </button>
+          </div>
         </div>
         <canvas id="trendCanvas" height="320"></canvas>
       </section>
 
-      <section class="tool-panel" aria-label="History table">
-        <div class="panel-head">
-          <div>
-            <h2>Recent checks</h2>
-            <p class="muted">Latest 30 folder measurements.</p>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Folder</th>
-                <th>Path</th>
-                <th>Used</th>
-                <th>Filesystem</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="historyRows">
-              <tr>
-                <td colspan="6">No history yet.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
     </main>
   </body>
 </html>

@@ -37,6 +37,28 @@ def current_branch() -> str | None:
     return branch or None
 
 
+def upstream_branch() -> str | None:
+    completed = run_git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}", check=False)
+    upstream = completed.stdout.strip()
+    return upstream if completed.returncode == 0 and upstream else None
+
+
+def sync_with_remote() -> bool:
+    upstream = upstream_branch()
+    if not upstream:
+        return True
+
+    completed = run_git("pull", "--rebase", "--autostash", check=False)
+    if completed.returncode == 0:
+        if completed.stdout.strip():
+            print(completed.stdout.strip())
+        return True
+
+    detail = completed.stderr.strip() or completed.stdout.strip()
+    print(f"Failed to sync with remote before publishing: {detail}", file=sys.stderr)
+    return False
+
+
 def latest_timestamp() -> str:
     latest_path = DATA_FILES[0]
     if not latest_path.exists():
@@ -61,6 +83,9 @@ def main() -> int:
         print(f"Missing data files: {', '.join(missing)}", file=sys.stderr)
         return 1
 
+    if not sync_with_remote():
+        return 1
+
     run_git("add", "--", *(str(path.relative_to(ROOT)) for path in DATA_FILES))
 
     diff = run_git("diff", "--cached", "--quiet", "--", *(str(path.relative_to(ROOT)) for path in DATA_FILES), check=False)
@@ -72,8 +97,7 @@ def main() -> int:
     run_git("commit", "-m", message)
 
     branch = current_branch() or "main"
-    upstream = run_git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}", check=False)
-    if upstream.returncode == 0:
+    if upstream_branch():
         run_git("push")
     else:
         run_git("push", "-u", "origin", branch)

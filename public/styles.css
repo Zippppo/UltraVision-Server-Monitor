@@ -199,8 +199,33 @@ main {
 }
 
 .gpu-table {
-  min-width: 900px;
+  min-width: 1040px;
   border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.gpu-col-owner {
+  width: 118px;
+}
+
+.gpu-col-id {
+  width: 82px;
+}
+
+.gpu-col-device {
+  width: 158px;
+}
+
+.gpu-col-metric {
+  width: 238px;
+}
+
+.gpu-col-temp {
+  width: 92px;
+}
+
+.gpu-col-power {
+  width: 114px;
 }
 
 .gpu-table th,
@@ -234,7 +259,7 @@ main {
 }
 
 .gpu-bar-cell {
-  min-width: 180px;
+  min-width: 0;
 }
 
 .gpu-bar-head {
@@ -282,6 +307,53 @@ main {
   font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
   font-size: 0.86rem;
   font-weight: 800;
+}
+
+.gpu-owner-cell {
+  width: 118px;
+  min-width: 118px;
+  max-width: 132px;
+}
+
+.owner-pill {
+  display: inline-flex;
+  align-items: center;
+  min-width: 58px;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 0.75rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.owner-ours {
+  color: var(--green);
+  border-color: #b8dfc5;
+  background: #eef9f1;
+}
+
+.owner-other {
+  color: var(--red);
+  border-color: #efb4b4;
+  background: #fff1f1;
+}
+
+.owner-free {
+  color: var(--muted);
+  border-color: #d0d5dd;
+  background: #f2f4f7;
+}
+
+.owner-user {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 750;
+  white-space: nowrap;
 }
 
 .total-overview {
@@ -397,6 +469,47 @@ main {
   margin-bottom: 14px;
 }
 
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.segmented-control {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.segment-button {
+  min-height: 36px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  padding: 0 12px;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.segment-button:first-child {
+  border-left: 0;
+}
+
+.segment-button.active {
+  color: var(--blue);
+  background: #eef4ff;
+}
+
+.segment-button:hover {
+  color: var(--text);
+  background: #eef2f8;
+}
+
 .icon-button {
   min-height: 36px;
   border: 1px solid var(--line);
@@ -491,6 +604,11 @@ td code {
 
   .gpu-stat-strip {
     grid-template-columns: 1fr;
+  }
+
+  .panel-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   canvas {

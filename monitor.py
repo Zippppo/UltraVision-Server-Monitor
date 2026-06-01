@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import csv
-import io
 import json
 import os
 import shlex
@@ -24,11 +22,13 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "port": 8090,
     "ssh_options": ["-o", "BatchMode=yes", "-o", "ConnectTimeout=30"],
     "owner_label": "xiaoqingguo",
+    "owned_process_root": "/home/xiaoqingguo/",
     "default_quota_gb": 600,
     "collect_gpus": True,
     "exclude_gpu_indices": [7],
     "command_timeout_seconds": 600,
     "history_limit": 400,
+    "history_retention_days": 30,
     "publish_command": "",
     "paths": [
         {"label": "Rongkun", "path": "/home/xiaoqingguo/Rongkun"},
@@ -266,29 +266,120 @@ def collect_path(host: str, item: dict[str, Any], timeout: int) -> dict[str, Any
     return base
 
 
-def gpu_probe_command() -> str:
-    query_fields = ",".join(
-        [
-            "index",
-            "name",
-            "uuid",
-            "utilization.gpu",
-            "utilization.memory",
-            "memory.total",
-            "memory.used",
-            "memory.free",
-            "temperature.gpu",
-            "power.draw",
-            "power.limit",
-        ]
-    )
-    return " ".join(
+def gpu_probe_command(owned_process_root: str) -> str:
+    payload = r"""
+import csv
+import json
+import os
+import socket
+import subprocess
+
+GPU_QUERY_FIELDS = [
+    "index",
+    "name",
+    "uuid",
+    "utilization.gpu",
+    "utilization.memory",
+    "memory.total",
+    "memory.used",
+    "memory.free",
+    "temperature.gpu",
+    "power.draw",
+    "power.limit",
+]
+PROC_QUERY_FIELDS = [
+    "gpu_uuid",
+    "pid",
+    "process_name",
+    "used_memory",
+]
+
+
+def query(fields, query_type):
+    cmd = [
+        "nvidia-smi",
+        f"--query-{query_type}=" + ",".join(fields),
+        "--format=csv,noheader,nounits",
+    ]
+    completed = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if completed.returncode != 0:
+        raise RuntimeError((completed.stderr or completed.stdout or "nvidia-smi failed").strip())
+
+    rows = []
+    for line in completed.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        values = next(csv.reader([line], skipinitialspace=True))
+        rows.append({field: value.strip() for field, value in zip(fields, values)})
+    return rows
+
+
+def is_owned_cwd(cwd):
+    cwd = str(cwd or "").strip()
+    owned_root = OWNED_PROCESS_ROOT.rstrip("/")
+    return cwd == owned_root or cwd.startswith(f"{owned_root}/")
+
+
+def enrich_processes(processes):
+    enriched = []
+    for proc in processes:
+        item = dict(proc)
+        pid = str(item.get("pid", "")).strip()
+        cwd = ""
+        user = ""
+        if pid:
+            proc_dir = f"/proc/{pid}"
+            try:
+                cwd = os.readlink(f"{proc_dir}/cwd")
+            except OSError:
+                cwd = ""
+            try:
+                import pwd
+
+                user = pwd.getpwuid(os.stat(proc_dir).st_uid).pw_name
+            except Exception:
+                user = ""
+
+        item["cwd"] = cwd
+        item["user"] = user
+        item["owned_by_us"] = is_owned_cwd(cwd)
+        enriched.append(item)
+    return enriched
+
+
+try:
+    gpus = query(GPU_QUERY_FIELDS, "gpu")
+    try:
+        processes = enrich_processes(query(PROC_QUERY_FIELDS, "compute-apps"))
+    except Exception:
+        processes = []
+
+    print(json.dumps({
+        "host": socket.gethostname(),
+        "gpus": gpus,
+        "processes": processes,
+    }))
+except Exception as exc:
+    print(json.dumps({
+        "host": socket.gethostname(),
+        "error": str(exc),
+        "gpus": [],
+        "processes": [],
+    }))
+"""
+    payload = f"OWNED_PROCESS_ROOT = {owned_process_root!r}\n{payload.strip()}"
+    return "\n".join(
         [
             "if ! command -v nvidia-smi >/dev/null 2>&1; then",
             "printf 'nvidia_smi_missing\\n';",
             "exit 0;",
-            "fi;",
-            f"nvidia-smi --query-gpu={query_fields} --format=csv,noheader,nounits",
+            "fi",
+            "if ! command -v python3 >/dev/null 2>&1; then",
+            "printf 'python3_missing\\n';",
+            "exit 0;",
+            "fi",
+            f"python3 - <<'PY'\n{payload}\nPY",
         ]
     )
 
@@ -305,6 +396,7 @@ def collect_gpus(
     timeout: int,
     ssh_options: list[str],
     exclude_indices: set[int],
+    owned_process_root: str,
 ) -> dict[str, Any]:
     result: dict[str, Any] = {
         "status": "ok",
@@ -314,7 +406,7 @@ def collect_gpus(
     }
 
     try:
-        output = run_ssh(host, gpu_probe_command(), timeout, ssh_options)
+        output = run_ssh(host, gpu_probe_command(owned_process_root), timeout, ssh_options)
     except subprocess.TimeoutExpired:
         result["status"] = "error"
         result["error"] = f"ssh command timed out after {timeout} seconds"
@@ -329,44 +421,120 @@ def collect_gpus(
         result["error"] = "nvidia-smi is not available on the remote host"
         return result
 
+    if output == "python3_missing":
+        result["status"] = "unavailable"
+        result["error"] = "python3 is not available on the remote host"
+        return result
+
     if not output:
         result["status"] = "unavailable"
         result["error"] = "nvidia-smi returned no GPU rows"
         return result
 
-    rows = csv.reader(io.StringIO(output), skipinitialspace=True)
+    try:
+        payload = json.loads(output)
+    except json.JSONDecodeError as exc:
+        result["status"] = "error"
+        result["error"] = f"unexpected GPU probe JSON: {exc}"
+        return result
+
+    if payload.get("error"):
+        result["status"] = "error"
+        result["error"] = str(payload["error"])
+        return result
+
+    process_rows = payload.get("processes") if isinstance(payload.get("processes"), list) else []
+    processes_by_uuid: dict[str, list[dict[str, Any]]] = {}
+    for proc in process_rows:
+        if not isinstance(proc, dict):
+            continue
+        gpu_uuid = str(proc.get("gpu_uuid", "")).strip()
+        if gpu_uuid:
+            processes_by_uuid.setdefault(gpu_uuid, []).append(proc)
+
+    rows = payload.get("gpus") if isinstance(payload.get("gpus"), list) else []
     gpus = []
     for row in rows:
-        if len(row) < 11:
-            result["status"] = "error"
-            result["error"] = f"unexpected nvidia-smi row: {row!r}"
-            return result
+        if not isinstance(row, dict):
+            continue
 
-        index = parse_int(row[0])
+        index = parse_int(row.get("index"))
         if index is not None and index in exclude_indices:
             continue
 
-        memory_total = mib_to_bytes(row[5])
-        memory_used = mib_to_bytes(row[6])
-        memory_free = mib_to_bytes(row[7])
+        uuid = str(row.get("uuid", "")).strip()
+        processes = processes_by_uuid.get(uuid, [])
+        memory_total = mib_to_bytes(row.get("memory.total"))
+        memory_used = mib_to_bytes(row.get("memory.used"))
+        memory_free = mib_to_bytes(row.get("memory.free"))
         memory_used_percent = None
         if memory_total and memory_used is not None:
             memory_used_percent = round((memory_used / memory_total) * 100, 2)
 
+        normalized_processes = []
+        for proc in processes:
+            normalized_processes.append(
+                {
+                    "pid": parse_int(proc.get("pid")),
+                    "process_name": str(proc.get("process_name", "")).strip(),
+                    "used_memory_bytes": mib_to_bytes(proc.get("used_memory")),
+                    "user": str(proc.get("user", "")).strip(),
+                    "cwd": str(proc.get("cwd", "")).strip(),
+                    "owned_by_us": bool(proc.get("owned_by_us")),
+                }
+            )
+
+        if not normalized_processes:
+            owner_status = "free"
+        elif all(proc["owned_by_us"] for proc in normalized_processes):
+            owner_status = "ours"
+        else:
+            owner_status = "other"
+
+        owner_processes = (
+            [proc for proc in normalized_processes if not proc["owned_by_us"]]
+            if owner_status == "other"
+            else normalized_processes
+        )
+        owner_candidates = sorted(
+            owner_processes,
+            key=lambda proc: proc.get("used_memory_bytes") or 0,
+            reverse=True,
+        )
+        if owner_status == "ours":
+            owner_user = next(
+                (
+                    display_name
+                    for proc in owner_candidates
+                    if (display_name := owned_process_display_name(proc.get("cwd", ""), owned_process_root))
+                ),
+                "",
+            )
+        else:
+            owner_user = ""
+        if not owner_user:
+            owner_user = next(
+                (proc["user"] for proc in owner_candidates if proc.get("user")),
+                "",
+            )
+
         gpus.append(
             {
-                "index": parse_int(row[0]),
-                "name": row[1].strip(),
-                "uuid": row[2].strip(),
-                "gpu_util_percent": parse_float(row[3]),
-                "memory_util_percent": parse_float(row[4]),
+                "index": index,
+                "name": str(row.get("name", "")).strip(),
+                "uuid": uuid,
+                "gpu_util_percent": parse_float(row.get("utilization.gpu")),
+                "memory_util_percent": parse_float(row.get("utilization.memory")),
                 "memory_total_bytes": memory_total,
                 "memory_used_bytes": memory_used,
                 "memory_free_bytes": memory_free,
                 "memory_used_percent": memory_used_percent,
-                "temperature_c": parse_float(row[8]),
-                "power_draw_watts": parse_float(row[9]),
-                "power_limit_watts": parse_float(row[10]),
+                "temperature_c": parse_float(row.get("temperature.gpu")),
+                "power_draw_watts": parse_float(row.get("power.draw")),
+                "power_limit_watts": parse_float(row.get("power.limit")),
+                "process_count": len(normalized_processes),
+                "owner_status": owner_status,
+                "owner_user": owner_user,
             }
         )
 
@@ -375,6 +543,22 @@ def collect_gpus(
         result["status"] = "unavailable"
         result["error"] = "nvidia-smi returned no GPU rows"
     return result
+
+
+def owned_process_display_name(cwd: str, owned_process_root: str) -> str:
+    cwd = str(cwd or "").strip()
+    owned_root = str(owned_process_root or "").strip().rstrip("/")
+    if not cwd or not owned_root or cwd == owned_root:
+        return ""
+
+    prefix = f"{owned_root}/"
+    if not cwd.startswith(prefix):
+        return ""
+
+    relative = cwd[len(prefix) :].strip("/")
+    if not relative:
+        return ""
+    return relative.split("/", 1)[0]
 
 
 def build_filesystem_summary(results: list[dict[str, Any]]) -> dict[str, Any]:
@@ -425,6 +609,7 @@ def build_snapshot(config: dict[str, Any]) -> dict[str, Any]:
     timeout = int(config.get("command_timeout_seconds", 600))
     ssh_options = normalize_ssh_options(config.get("ssh_options"))
     default_quota_gb = config.get("default_quota_gb")
+    owned_process_root = str(config.get("owned_process_root", "/home/xiaoqingguo/"))
     exclude_gpu_indices = {
         int(index)
         for index in config.get("exclude_gpu_indices", [])
@@ -440,7 +625,7 @@ def build_snapshot(config: dict[str, Any]) -> dict[str, Any]:
     ]
     results = [collect_path(host, item, timeout) for item in path_configs]
     gpu_summary = (
-        collect_gpus(host, timeout, ssh_options, exclude_gpu_indices)
+        collect_gpus(host, timeout, ssh_options, exclude_gpu_indices, owned_process_root)
         if config.get("collect_gpus", True)
         else {
             "status": "disabled",
@@ -460,6 +645,7 @@ def build_snapshot(config: dict[str, Any]) -> dict[str, Any]:
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "host": host,
         "owner_label": config.get("owner_label", "xiaoqingguo"),
+        "owned_process_root": owned_process_root,
         "default_quota_gb": default_quota_gb,
         "filesystem_summary": build_filesystem_summary(results),
         "gpu_summary": gpu_summary,
@@ -479,9 +665,22 @@ def load_history() -> list[dict[str, Any]]:
     return data if isinstance(data, list) else []
 
 
-def append_history(snapshot: dict[str, Any], limit: int) -> None:
+def append_history(snapshot: dict[str, Any], limit: int, retention_days: int) -> None:
     history = load_history()
     history.append(snapshot)
+    if retention_days > 0:
+        cutoff = datetime.now().astimezone() - timedelta(days=retention_days)
+        retained = []
+        for item in history:
+            generated_at = item.get("generated_at")
+            try:
+                generated_at_dt = datetime.fromisoformat(str(generated_at))
+            except ValueError:
+                retained.append(item)
+                continue
+            if generated_at_dt >= cutoff:
+                retained.append(item)
+        history = retained
     if limit > 0:
         history = history[-limit:]
     write_json_atomic(HISTORY_PATH, history)
@@ -520,6 +719,10 @@ def publish_if_configured(config: dict[str, Any]) -> None:
     if completed.returncode != 0:
         detail = completed.stderr.strip() or completed.stdout.strip()
         raise RuntimeError(f"publish command failed: {detail}")
+    if completed.stdout.strip():
+        log(completed.stdout.strip())
+    if completed.stderr.strip():
+        log(completed.stderr.strip())
 
 
 def run_once(config: dict[str, Any]) -> dict[str, Any]:
@@ -527,7 +730,11 @@ def run_once(config: dict[str, Any]) -> dict[str, Any]:
     log(f"Collecting storage usage from {config['ssh_host']}")
     snapshot = build_snapshot(config)
     write_json_atomic(LATEST_PATH, snapshot)
-    append_history(snapshot, int(config.get("history_limit", 400)))
+    append_history(
+        snapshot,
+        int(config.get("history_limit", 400)),
+        int(config.get("history_retention_days", 30)),
+    )
     publish_if_configured(config)
     log(f"Collection finished with status: {snapshot['status']}")
     return snapshot
@@ -539,6 +746,8 @@ def ensure_placeholder_data(config: dict[str, Any]) -> None:
         placeholder = {
             "generated_at": None,
             "host": config["ssh_host"],
+            "owner_label": config.get("owner_label", "xiaoqingguo"),
+            "owned_process_root": config.get("owned_process_root", "/home/xiaoqingguo/"),
             "status": "no_data",
             "paths": [],
             "gpu_summary": {

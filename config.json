@@ -10,6 +10,7 @@
     "ConnectTimeout=30"
   ],
   "owner_label": "xiaoqingguo",
+  "owned_process_root": "/home/xiaoqingguo/",
   "default_quota_gb": 600,
   "collect_gpus": true,
   "exclude_gpu_indices": [
@@ -17,6 +18,7 @@
   ],
   "command_timeout_seconds": 600,
   "history_limit": 400,
+  "history_retention_days": 30,
   "publish_command": "\"{python}\" \"scripts\\publish_github_pages.py\"",
   "paths": [
     {
