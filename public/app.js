@@ -1,11 +1,18 @@
 const latestUrl = "data/latest.json";
 const historyUrl = "data/history.json";
-const colors = ["#2563eb", "#16803c", "#b45309", "#0f766e", "#6d28d9", "#c62828"];
+const chartColors = {
+  line: { r: 37, g: 99, b: 235 },
+  ours: { r: 22, g: 128, b: 60 },
+  other: { r: 198, g: 40, b: 40 },
+  empty: { r: 208, g: 213, b: 221 },
+};
 
 const state = {
   latest: null,
   history: [],
   trendDays: 7,
+  chartHoverIndex: null,
+  chartPoints: [],
 };
 
 function byId(id) {
@@ -69,6 +76,27 @@ function formatShortTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function formatShortDate(value) {
+  if (!value) {
+    return "-";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleDateString(undefined, {
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
+
+function formatGpuCount(value) {
+  if (!Number.isFinite(Number(value))) {
+    return "-";
+  }
+  return Number.isInteger(Number(value)) ? String(Number(value)) : Number(value).toFixed(1);
 }
 
 function statusClass(status) {
@@ -171,9 +199,26 @@ function gpuIsOccupied(gpu) {
 
 function gpuOccupancyPoint(snapshot) {
   const gpus = Array.isArray(snapshot?.gpu_summary?.items) ? snapshot.gpu_summary.items : [];
+  const ownerCounts = gpus.reduce(
+    (counts, gpu) => {
+      if (!gpuIsOccupied(gpu)) {
+        return counts;
+      }
+      counts.occupied += 1;
+      const status = gpuOwnerStatus(gpu);
+      if (status === "ours" || status === "other") {
+        counts[status] += 1;
+      }
+      return counts;
+    },
+    { occupied: 0, ours: 0, other: 0 },
+  );
   return {
     time: snapshot.generated_at,
-    occupied: gpus.filter(gpuIsOccupied).length,
+    occupied: ownerCounts.occupied,
+    ours: ownerCounts.ours,
+    other: ownerCounts.other,
+    free: Math.max(0, gpus.length - ownerCounts.occupied),
     total: gpus.length,
   };
 }
@@ -406,7 +451,7 @@ function renderHeader() {
   byId("subtitle").textContent = `${latest.host || "h20b"} updated at ${generatedAt}`;
 }
 
-function trendHistory() {
+function rawTrendHistory() {
   const cutoff = Date.now() - state.trendDays * 24 * 60 * 60 * 1000;
   return state.history
     .filter((snapshot) => {
@@ -415,6 +460,347 @@ function trendHistory() {
     })
     .map(gpuOccupancyPoint)
     .filter((point) => Number.isFinite(point.occupied) && Number.isFinite(point.total) && point.total > 0);
+}
+
+function dayKey(value) {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function dayMidpointIso(key) {
+  const [year, month, day] = key.split("-").map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0).toISOString();
+}
+
+function dailyAverage(points) {
+  const groups = new Map();
+  for (const point of points) {
+    const key = dayKey(point.time);
+    const group = groups.get(key) || {
+      key,
+      samples: 0,
+      occupied: 0,
+      ours: 0,
+      other: 0,
+      free: 0,
+      total: 0,
+    };
+    group.samples += 1;
+    group.occupied += Number(point.occupied) || 0;
+    group.ours += Number(point.ours) || 0;
+    group.other += Number(point.other) || 0;
+    group.free += Number(point.free) || 0;
+    group.total += Number(point.total) || 0;
+    groups.set(key, group);
+  }
+
+  return [...groups.values()]
+    .sort((a, b) => a.key.localeCompare(b.key))
+    .map((group) => ({
+      time: dayMidpointIso(group.key),
+      occupied: group.occupied / group.samples,
+      ours: group.ours / group.samples,
+      other: group.other / group.samples,
+      free: group.free / group.samples,
+      total: group.total / group.samples,
+      samples: group.samples,
+      isAverage: true,
+    }));
+}
+
+function smoothDailyTrend(points) {
+  return points.map((point, index) => {
+    const window = points.slice(Math.max(0, index - 1), Math.min(points.length, index + 2));
+    const average = (field) => window.reduce((total, item) => total + (Number(item[field]) || 0), 0) / window.length;
+    return {
+      ...point,
+      occupied: average("occupied"),
+      ours: average("ours"),
+      other: average("other"),
+      free: average("free"),
+      total: average("total"),
+      samples: window.reduce((total, item) => total + (Number(item.samples) || 0), 0),
+      isSmoothed: true,
+    };
+  });
+}
+
+function trendHistory() {
+  const points = rawTrendHistory();
+  return state.trendDays >= 30 ? smoothDailyTrend(dailyAverage(points)) : points;
+}
+
+function chartColor(name, alpha = 1) {
+  const color = chartColors[name];
+  return `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
+}
+
+function timeToX(timeMs, minTime, maxTime, left, right) {
+  if (maxTime <= minTime) {
+    return (left + right) / 2;
+  }
+  return left + ((timeMs - minTime) / (maxTime - minTime)) * (right - left);
+}
+
+function firstDayMarker(minTime) {
+  const date = new Date(minTime);
+  date.setHours(0, 0, 0, 0);
+  if (date.getTime() <= minTime) {
+    date.setDate(date.getDate() + 1);
+  }
+  return date;
+}
+
+function drawTimeMarkers(ctx, left, right, top, bottom, labelY, minTime, maxTime, rangeDays) {
+  const marker = firstDayMarker(minTime);
+  const stepDays = rangeDays >= 30 ? 5 : 1;
+  const minLabelGap = right - left < 520 ? 72 : 52;
+  let lastLabelX = -Infinity;
+
+  ctx.save();
+  ctx.font = "12px system-ui, sans-serif";
+  while (marker.getTime() < maxTime) {
+    const markerMs = marker.getTime();
+    const x = timeToX(markerMs, minTime, maxTime, left, right);
+    if (x > left + 4 && x < right - 4) {
+      ctx.strokeStyle = rangeDays >= 30 ? "#edf0f5" : "#e4e8ef";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, top);
+      ctx.lineTo(x, bottom);
+      ctx.stroke();
+
+      if (x - lastLabelX >= minLabelGap) {
+        const label = formatShortDate(marker);
+        ctx.fillStyle = "#667085";
+        ctx.fillText(label, x - ctx.measureText(label).width / 2, labelY);
+        lastLabelX = x;
+      }
+    }
+    marker.setDate(marker.getDate() + stepDays);
+  }
+  ctx.restore();
+}
+
+function drawOwnershipStrip(ctx, chartPoints, left, right, y) {
+  const height = 8;
+  const firstTime = chartPoints[0]?.timeMs;
+  const lastTime = chartPoints[chartPoints.length - 1]?.timeMs;
+  const nominalMs = chartPoints.some((point) => point.isAverage) ? 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000;
+  const nominalWidth = lastTime > firstTime ? ((right - left) * nominalMs) / (lastTime - firstTime) : right - left;
+  ctx.save();
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(left, y, right - left, height, 4);
+  } else {
+    ctx.rect(left, y, right - left, height);
+  }
+  ctx.clip();
+  ctx.fillStyle = chartColor("empty", 0.55);
+  ctx.fillRect(left, y, right - left, height);
+
+  chartPoints.forEach((point) => {
+    const start = Math.max(left, point.x - nominalWidth / 2);
+    const end = Math.min(right, point.x + nominalWidth / 2);
+    const width = Math.max(0, end - start);
+    const total = Math.max(1, Number(point.total) || 0);
+    const oursWidth = width * ((Number(point.ours) || 0) / total);
+    const otherWidth = width * ((Number(point.other) || 0) / total);
+    let x = start;
+
+    if (oursWidth > 0.5) {
+      ctx.fillStyle = chartColor("ours", 0.9);
+      ctx.fillRect(x, y, oursWidth, height);
+      x += oursWidth;
+    }
+    if (otherWidth > 0.5) {
+      ctx.fillStyle = chartColor("other", 0.9);
+      ctx.fillRect(x, y, otherWidth, height);
+    }
+  });
+  ctx.restore();
+}
+
+function chartSegments(chartPoints) {
+  const maxGapMs = maxChartGapMs(chartPoints);
+  const segments = [];
+  let segment = [];
+
+  for (const point of chartPoints) {
+    const previous = segment[segment.length - 1];
+    if (previous && point.timeMs - previous.timeMs > maxGapMs) {
+      segments.push(segment);
+      segment = [];
+    }
+    segment.push(point);
+  }
+  if (segment.length) {
+    segments.push(segment);
+  }
+  return segments;
+}
+
+function maxChartGapMs(chartPoints) {
+  return chartPoints.some((point) => point.isAverage)
+    ? 36 * 60 * 60 * 1000
+    : 6 * 60 * 60 * 1000;
+}
+
+function drawNoDataGaps(ctx, chartPoints, top, bottom) {
+  const maxGapMs = maxChartGapMs(chartPoints);
+
+  ctx.save();
+  ctx.font = "800 11px system-ui, sans-serif";
+  for (let index = 1; index < chartPoints.length; index += 1) {
+    const previous = chartPoints[index - 1];
+    const current = chartPoints[index];
+    if (current.timeMs - previous.timeMs <= maxGapMs) {
+      continue;
+    }
+
+    const x = previous.x;
+    const width = current.x - previous.x;
+    if (width <= 8) {
+      continue;
+    }
+
+    ctx.fillStyle = "rgba(242, 244, 247, 0.72)";
+    ctx.fillRect(x, top, width, bottom - top);
+    ctx.strokeStyle = "rgba(152, 162, 179, 0.45)";
+    ctx.setLineDash([4, 5]);
+    ctx.beginPath();
+    ctx.moveTo(x, top);
+    ctx.lineTo(x, bottom);
+    ctx.moveTo(x + width, top);
+    ctx.lineTo(x + width, bottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    if (width >= 68) {
+      const label = "No data";
+      const labelWidth = ctx.measureText(label).width + 16;
+      const labelX = x + width / 2 - labelWidth / 2;
+      const labelY = top + 14;
+      ctx.fillStyle = "rgba(255, 255, 255, 0.86)";
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(labelX, labelY, labelWidth, 22, 6);
+        ctx.fill();
+      } else {
+        ctx.fillRect(labelX, labelY, labelWidth, 22);
+      }
+      ctx.fillStyle = "#667085";
+      ctx.fillText(label, labelX + 8, labelY + 15);
+    }
+
+    ctx.strokeStyle = "rgba(102, 112, 133, 0.75)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 6]);
+    drawGapCurve(ctx, previous, current);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
+function drawTrendPath(ctx, chartPoints) {
+  if (!chartPoints.length) {
+    return;
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(chartPoints[0].x, chartPoints[0].y);
+  for (let index = 0; index < chartPoints.length - 1; index += 1) {
+    const p0 = chartPoints[index - 1] || chartPoints[index];
+    const p1 = chartPoints[index];
+    const p2 = chartPoints[index + 1];
+    const p3 = chartPoints[index + 2] || p2;
+    const minY = Math.min(p1.y, p2.y);
+    const maxY = Math.max(p1.y, p2.y);
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = Math.max(minY, Math.min(maxY, p1.y + (p2.y - p0.y) / 6));
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = Math.max(minY, Math.min(maxY, p2.y - (p3.y - p1.y) / 6));
+    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+  }
+}
+
+function drawGapCurve(ctx, previous, current) {
+  const dx = current.x - previous.x;
+  const cp1x = previous.x + dx * 0.38;
+  const cp2x = current.x - dx * 0.38;
+
+  ctx.beginPath();
+  ctx.moveTo(previous.x, previous.y);
+  ctx.bezierCurveTo(cp1x, previous.y, cp2x, current.y, current.x, current.y);
+}
+
+function drawTooltip(ctx, point, width, top, bottom) {
+  const title = point.isAverage
+    ? `${formatShortDate(point.time)} (${point.samples} checks)`
+    : formatTime(point.time);
+  const prefix = point.isSmoothed ? "3-day avg " : point.isAverage ? "Avg " : "";
+  const value = `${prefix}${formatGpuCount(point.occupied)} / ${formatGpuCount(point.total)} GPUs occupied`;
+  const ownerText = `OURS ${formatGpuCount(point.ours)}, OTHER ${formatGpuCount(point.other)}, EMPTY ${formatGpuCount(point.free)}`;
+  const paddingX = 10;
+  const tooltipHeight = 68;
+  ctx.font = "800 12px system-ui, sans-serif";
+  const valueWidth = ctx.measureText(value).width;
+  ctx.font = "12px system-ui, sans-serif";
+  const tooltipWidth = Math.max(ctx.measureText(title).width, ctx.measureText(ownerText).width, valueWidth) + paddingX * 2;
+  let tooltipX = point.x + 14;
+  let tooltipY = point.y - tooltipHeight - 14;
+
+  if (tooltipX + tooltipWidth > width - 8) {
+    tooltipX = point.x - tooltipWidth - 14;
+  }
+  tooltipX = Math.max(8, Math.min(width - tooltipWidth - 8, tooltipX));
+  if (tooltipY < 8) {
+    tooltipY = point.y + 14;
+  }
+  tooltipY = Math.max(8, Math.min(bottom - tooltipHeight + 28, tooltipY));
+
+  ctx.save();
+  ctx.strokeStyle = "rgba(102, 112, 133, 0.45)";
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(point.x, top);
+  ctx.lineTo(point.x, bottom);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = "#d9dee7";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight, 8);
+  } else {
+    ctx.rect(tooltipX, tooltipY, tooltipWidth, tooltipHeight);
+  }
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#172033";
+  ctx.font = "800 12px system-ui, sans-serif";
+  ctx.fillText(value, tooltipX + paddingX, tooltipY + 20);
+  ctx.fillStyle = "#475467";
+  ctx.fillText(ownerText, tooltipX + paddingX, tooltipY + 38);
+  ctx.fillStyle = "#667085";
+  ctx.font = "12px system-ui, sans-serif";
+  ctx.fillText(title, tooltipX + paddingX, tooltipY + 56);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = chartColor("line");
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(point.x, point.y, 5.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawChart() {
@@ -435,6 +821,8 @@ function drawChart() {
   const chartHint = byId("chartHint");
 
   if (!values.length) {
+    state.chartPoints = [];
+    state.chartHoverIndex = null;
     chartHint.textContent = `No GPU history in the last ${state.trendDays} days.`;
     ctx.fillStyle = "#667085";
     ctx.font = "14px system-ui, sans-serif";
@@ -443,7 +831,9 @@ function drawChart() {
   }
 
   const latest = points[points.length - 1];
-  chartHint.textContent = `${points.length} checks in the last ${state.trendDays} days; latest ${latest.occupied} / ${latest.total} GPUs occupied.`;
+  chartHint.textContent = latest.isAverage
+    ? `${points.length} daily trend points in the last ${state.trendDays} days; latest 3-day avg ${formatGpuCount(latest.occupied)} / ${formatGpuCount(latest.total)} GPUs occupied; OURS ${formatGpuCount(latest.ours)}, OTHER ${formatGpuCount(latest.other)}, EMPTY ${formatGpuCount(latest.free)}.`
+    : `${points.length} checks in the last ${state.trendDays} days; latest ${formatGpuCount(latest.occupied)} / ${formatGpuCount(latest.total)} GPUs occupied; OURS ${formatGpuCount(latest.ours)}, OTHER ${formatGpuCount(latest.other)}, EMPTY ${formatGpuCount(latest.free)}.`;
 
   const left = 48;
   const right = 22;
@@ -453,15 +843,29 @@ function drawChart() {
   const innerHeight = height - top - bottom;
   const maxGpuCount = Math.max(...points.map((point) => point.total), ...values, 1);
   const maxValue = Math.max(1, Math.ceil(maxGpuCount));
-  const sampleCount = Math.max(1, points.length);
+  const chartBottom = top + innerHeight;
+  const timeValues = points.map((point) => new Date(point.time).getTime()).filter(Number.isFinite);
+  const minTime = Math.min(...timeValues);
+  const maxTime = Math.max(...timeValues);
+  const chartPoints = points.map((point, pointIndex) => ({
+    ...point,
+    timeMs: timeValues[pointIndex],
+    x: timeToX(timeValues[pointIndex], minTime, maxTime, left, left + innerWidth),
+    y: chartBottom - (point.occupied / maxValue) * innerHeight,
+  }));
+  state.chartPoints = chartPoints;
+  const segments = chartSegments(chartPoints);
 
   ctx.strokeStyle = "#d9dee7";
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(left, top);
-  ctx.lineTo(left, top + innerHeight);
-  ctx.lineTo(left + innerWidth, top + innerHeight);
+  ctx.lineTo(left, chartBottom);
+  ctx.lineTo(left + innerWidth, chartBottom);
   ctx.stroke();
+
+  drawTimeMarkers(ctx, left, left + innerWidth, top, chartBottom, height - 18, minTime, maxTime, state.trendDays);
+  drawNoDataGaps(ctx, chartPoints, top, chartBottom);
 
   ctx.fillStyle = "#667085";
   ctx.font = "12px system-ui, sans-serif";
@@ -477,47 +881,69 @@ function drawChart() {
     ctx.fillText(String(value), 18, y + 4);
   }
 
-  ctx.strokeStyle = colors[0];
-  ctx.fillStyle = colors[0];
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  points.forEach((point, pointIndex) => {
-    const x = sampleCount === 1 ? left + innerWidth / 2 : left + (pointIndex / (sampleCount - 1)) * innerWidth;
-    const y = top + innerHeight - (point.occupied / maxValue) * innerHeight;
-    if (pointIndex === 0) {
-      ctx.moveTo(x, y);
-    } else {
-      ctx.lineTo(x, y);
+  if (chartPoints.length > 1) {
+    const fillGradient = ctx.createLinearGradient(0, top, 0, chartBottom);
+    fillGradient.addColorStop(0, chartColor("line", 0.16));
+    fillGradient.addColorStop(1, chartColor("line", 0.02));
+    ctx.fillStyle = fillGradient;
+    for (const segment of segments) {
+      if (segment.length < 2) {
+        continue;
+      }
+      drawTrendPath(ctx, segment);
+      ctx.lineTo(segment[segment.length - 1].x, chartBottom);
+      ctx.lineTo(segment[0].x, chartBottom);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  ctx.strokeStyle = chartColor("line");
+  ctx.lineWidth = 3;
+  for (const segment of segments) {
+    drawTrendPath(ctx, segment);
+    ctx.stroke();
+  }
+
+  chartPoints.forEach((point, pointIndex) => {
+    const isActive = pointIndex === state.chartHoverIndex;
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, isActive ? 5 : 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = isActive ? "#ffffff" : chartColor("line");
+    ctx.fill();
+    if (isActive) {
+      ctx.strokeStyle = chartColor("line");
+      ctx.lineWidth = 3;
+      ctx.stroke();
     }
   });
-  ctx.stroke();
 
-  points.forEach((point, pointIndex) => {
-    const x = sampleCount === 1 ? left + innerWidth / 2 : left + (pointIndex / (sampleCount - 1)) * innerWidth;
-    const y = top + innerHeight - (point.occupied / maxValue) * innerHeight;
-    ctx.beginPath();
-    ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  const labelPoints = points.length === 1 ? [points[0]] : [points[0], points[points.length - 1]];
-  ctx.fillStyle = "#667085";
-  ctx.font = "12px system-ui, sans-serif";
-  for (const point of labelPoints) {
-    const pointIndex = points.indexOf(point);
-    const x = sampleCount === 1 ? left + innerWidth / 2 : left + (pointIndex / (sampleCount - 1)) * innerWidth;
-    const text = formatShortTime(point.time);
-    const offset = pointIndex === points.length - 1 ? -ctx.measureText(text).width : 0;
-    ctx.fillText(text, x + offset, height - 18);
-  }
+  drawOwnershipStrip(ctx, chartPoints, left, left + innerWidth, chartBottom + 4);
 
   const legendX = left;
   const legendY = 22;
   ctx.font = "12px system-ui, sans-serif";
-  ctx.fillStyle = colors[0];
-  ctx.fillRect(legendX, legendY - 9, 10, 10);
+  ctx.strokeStyle = chartColor("line");
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(legendX, legendY - 4);
+  ctx.lineTo(legendX + 12, legendY - 4);
+  ctx.stroke();
   ctx.fillStyle = "#172033";
-  ctx.fillText("Occupied GPUs", legendX + 16, legendY);
+  ctx.fillText("Occupied", legendX + 18, legendY);
+  ctx.fillStyle = chartColor("ours");
+  ctx.fillRect(legendX + 88, legendY - 9, 10, 10);
+  ctx.fillStyle = "#172033";
+  ctx.fillText("OURS", legendX + 104, legendY);
+  ctx.fillStyle = chartColor("other");
+  ctx.fillRect(legendX + 150, legendY - 9, 10, 10);
+  ctx.fillStyle = "#172033";
+  ctx.fillText("OTHER", legendX + 166, legendY);
+
+  const activePoint = chartPoints[state.chartHoverIndex];
+  if (activePoint) {
+    drawTooltip(ctx, activePoint, width, top, chartBottom);
+  }
 }
 
 function render() {
@@ -536,11 +962,38 @@ function setupTrendControls() {
         return;
       }
       state.trendDays = days;
+      state.chartHoverIndex = null;
       document.querySelectorAll("[data-trend-days]").forEach((candidate) => {
         candidate.classList.toggle("active", candidate === button);
       });
       drawChart();
     });
+  });
+}
+
+function setupChartHover() {
+  const canvas = byId("trendCanvas");
+  canvas.addEventListener("pointermove", (event) => {
+    if (!state.chartPoints.length) {
+      return;
+    }
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const nearest = state.chartPoints
+      .map((point, index) => ({ index, distance: Math.abs(point.x - x) }))
+      .sort((a, b) => a.distance - b.distance)[0];
+    const hitRange = Math.max(18, Math.min(48, rect.width / state.chartPoints.length));
+    const nextIndex = nearest.distance <= hitRange ? nearest.index : null;
+    if (nextIndex !== state.chartHoverIndex) {
+      state.chartHoverIndex = nextIndex;
+      drawChart();
+    }
+  });
+  canvas.addEventListener("pointerleave", () => {
+    if (state.chartHoverIndex !== null) {
+      state.chartHoverIndex = null;
+      drawChart();
+    }
   });
 }
 
@@ -562,8 +1015,12 @@ async function loadData() {
   }
 }
 
-window.addEventListener("resize", drawChart);
+window.addEventListener("resize", () => {
+  state.chartHoverIndex = null;
+  drawChart();
+});
 setupTrendControls();
+setupChartHover();
 byId("refreshButton").addEventListener("click", loadData);
 loadData();
 setInterval(loadData, 5 * 60 * 1000);

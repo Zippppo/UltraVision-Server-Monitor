@@ -534,6 +534,10 @@ canvas {
   min-height: 280px;
 }
 
+#trendCanvas {
+  cursor: crosshair;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
