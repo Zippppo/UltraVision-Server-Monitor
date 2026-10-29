@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-29T16:17:03+08:00",
+  "generated_at": "2026-10-29T16:31:06+08:00",
   "host": "h20b",
   "owner_label": "xiaoqingguo",
   "owned_process_root": "/home/xiaoqingguo/",
@@ -17,7 +17,7 @@
     "excluded_indices": [
       7
     ],
-    "error": "Connection timed out during banner exchange\nConnection to 158.182.11.82 port 22 timed out"
+    "error": "Connection closed by 158.182.11.82 port 22"
   },
   "status": "degraded",
   "paths": [
@@ -39,7 +39,7 @@
       "filesystem_available_bytes": null,
       "filesystem_use_percent": null,
       "mountpoint": null,
-      "error": "Connection timed out during banner exchange\nConnection to 158.182.11.82 port 22 timed out"
+      "error": "Connection closed by 158.182.11.82 port 22"
     },
     {
       "label": "yuewang",
@@ -59,7 +59,7 @@
       "filesystem_available_bytes": null,
       "filesystem_use_percent": null,
       "mountpoint": null,
-      "error": "Connection timed out during banner exchange\nConnection to 158.182.11.82 port 22 timed out"
+      "error": "Connection closed by 158.182.11.82 port 22"
     },
     {
       "label": "Hxchen",
@@ -79,7 +79,7 @@
       "filesystem_available_bytes": null,
       "filesystem_use_percent": null,
       "mountpoint": null,
-      "error": "Connection timed out during banner exchange\nConnection to 158.182.11.82 port 22 timed out"
+      "error": "Connection closed by 158.182.11.82 port 22"
     }
   ]
 }
