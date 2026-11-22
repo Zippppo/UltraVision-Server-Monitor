@@ -174,16 +174,6 @@ function gpuOwnerStatus(gpu) {
   return Number(gpu.process_count) > 0 ? "other" : "free";
 }
 
-function gpuOwnerLabel(status) {
-  if (status === "ours") {
-    return "OURS";
-  }
-  if (status === "other") {
-    return "OTHER";
-  }
-  return "EMPTY";
-}
-
 function gpuIsOccupied(gpu) {
   const processCount = Number(gpu.process_count);
   if (Number.isFinite(processCount)) {
@@ -310,13 +300,11 @@ function renderGpus() {
       const ownerStatus = gpuOwnerStatus(gpu);
       const ownerUser = String(gpu.owner_user || "").trim();
       const member = ownerStatus === "ours" ? memberNames.get(ownerUser.toLowerCase()) : "";
-      const displayUser = member || ownerUser;
+      const displayUser = member || ownerUser || (ownerStatus === "free" ? "Empty" : "Unknown");
+      const rowOwner = member || (ownerStatus === "free" ? "free" : "other");
       return `
-        <tr>
-          <td class="gpu-owner-cell">
-            <span class="owner-pill owner-${escapeHtml(ownerStatus)}">${escapeHtml(gpuOwnerLabel(ownerStatus))}</span>
-            ${displayUser ? `<span class="owner-user"${member ? ` data-member="${member}"` : ""}>${escapeHtml(displayUser)}</span>` : ""}
-          </td>
+        <tr data-owner="${rowOwner}">
+          <td class="gpu-owner-cell">${escapeHtml(displayUser)}</td>
           <td>
             <span class="gpu-id">GPU ${escapeHtml(gpu.index ?? "-")}</span>
           </td>

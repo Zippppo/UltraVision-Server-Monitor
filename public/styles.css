@@ -313,68 +313,29 @@ main {
   width: 118px;
   min-width: 118px;
   max-width: 132px;
-}
-
-.owner-pill {
-  display: inline-flex;
-  align-items: center;
-  min-width: 58px;
-  justify-content: center;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 4px 9px;
-  font-size: 0.75rem;
-  font-weight: 850;
-  line-height: 1;
-}
-
-.owner-ours {
-  color: var(--green);
-  border-color: #b8dfc5;
-  background: #eef9f1;
-}
-
-.owner-other {
-  color: var(--red);
-  border-color: #efb4b4;
-  background: #fff1f1;
-}
-
-.owner-free {
-  color: var(--muted);
-  border-color: #d0d5dd;
-  background: #f2f4f7;
-}
-
-.owner-user {
-  display: block;
-  margin-top: 7px;
-  color: var(--muted);
   font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 750;
-  white-space: nowrap;
 }
 
-.owner-user[data-member] {
-  width: fit-content;
-  padding: 3px 8px;
-  border-radius: 4px;
-}
-
-.owner-user[data-member="Haoxin"] {
-  color: #174a87;
+.gpu-table tr[data-owner="Haoxin"] {
   background: #deedff;
 }
 
-.owner-user[data-member="Wangyue"] {
-  color: #813900;
+.gpu-table tr[data-owner="Wangyue"] {
   background: #ffead1;
 }
 
-.owner-user[data-member="Rongkun"] {
-  color: #613395;
+.gpu-table tr[data-owner="Rongkun"] {
   background: #f0e4ff;
+}
+
+.gpu-table tr[data-owner="other"] {
+  background: #ffdddd;
+}
+
+.gpu-table tr[data-owner="free"] {
+  background: #f2f4f7;
 }
 
 .total-overview {
