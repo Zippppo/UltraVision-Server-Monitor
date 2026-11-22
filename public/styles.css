@@ -356,6 +356,27 @@ main {
   white-space: nowrap;
 }
 
+.owner-user[data-member] {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.owner-user[data-member="Haoxin"] {
+  color: #174a87;
+  background: #deedff;
+}
+
+.owner-user[data-member="Wangyue"] {
+  color: #813900;
+  background: #ffead1;
+}
+
+.owner-user[data-member="Rongkun"] {
+  color: #613395;
+  background: #f0e4ff;
+}
+
 .total-overview {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

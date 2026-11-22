@@ -1,5 +1,12 @@
 const latestUrl = "data/latest.json";
 const historyUrl = "data/history.json";
+const memberNames = new Map([
+  ["orca", "Haoxin"],
+  ["haoxin", "Haoxin"],
+  ["yuewang", "Wangyue"],
+  ["wangyue", "Wangyue"],
+  ["rongkun", "Rongkun"],
+]);
 const chartColors = {
   line: { r: 37, g: 99, b: 235 },
   ours: { r: 22, g: 128, b: 60 },
@@ -302,12 +309,13 @@ function renderGpus() {
       const tempClass = Number(gpu.temperature_c) >= 80 ? "status-error" : Number(gpu.temperature_c) >= 70 ? "status-warn" : "status-muted";
       const ownerStatus = gpuOwnerStatus(gpu);
       const ownerUser = String(gpu.owner_user || "").trim();
-      const displayUser = ownerStatus === "ours" && ownerUser === "orca" ? "Haoxin" : ownerUser;
+      const member = ownerStatus === "ours" ? memberNames.get(ownerUser.toLowerCase()) : "";
+      const displayUser = member || ownerUser;
       return `
         <tr>
           <td class="gpu-owner-cell">
             <span class="owner-pill owner-${escapeHtml(ownerStatus)}">${escapeHtml(gpuOwnerLabel(ownerStatus))}</span>
-            ${displayUser ? `<span class="owner-user">${escapeHtml(displayUser)}</span>` : ""}
+            ${displayUser ? `<span class="owner-user"${member ? ` data-member="${member}"` : ""}>${escapeHtml(displayUser)}</span>` : ""}
           </td>
           <td>
             <span class="gpu-id">GPU ${escapeHtml(gpu.index ?? "-")}</span>
