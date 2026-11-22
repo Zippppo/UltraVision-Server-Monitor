@@ -302,11 +302,12 @@ function renderGpus() {
       const tempClass = Number(gpu.temperature_c) >= 80 ? "status-error" : Number(gpu.temperature_c) >= 70 ? "status-warn" : "status-muted";
       const ownerStatus = gpuOwnerStatus(gpu);
       const ownerUser = String(gpu.owner_user || "").trim();
+      const displayUser = ownerStatus === "ours" && ownerUser === "orca" ? "Haoxin" : ownerUser;
       return `
         <tr>
           <td class="gpu-owner-cell">
             <span class="owner-pill owner-${escapeHtml(ownerStatus)}">${escapeHtml(gpuOwnerLabel(ownerStatus))}</span>
-            ${ownerUser ? `<span class="owner-user">${escapeHtml(ownerUser)}</span>` : ""}
+            ${displayUser ? `<span class="owner-user">${escapeHtml(displayUser)}</span>` : ""}
           </td>
           <td>
             <span class="gpu-id">GPU ${escapeHtml(gpu.index ?? "-")}</span>
