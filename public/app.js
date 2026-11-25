@@ -3,6 +3,7 @@ const historyUrl = "data/history.json";
 const memberNames = new Map([
   ["orca", "Haoxin"],
   ["haoxin", "Haoxin"],
+  ["hxchen", "Haoxin"],
   ["yuewang", "Wangyue"],
   ["wangyue", "Wangyue"],
   ["rongkun", "Rongkun"],
