@@ -288117,5 +288117,103 @@
         "error": null
       }
     ]
+  },
+  {
+    "generated_at": "2026-11-28T10:15:28+08:00",
+    "host": "h20b",
+    "owner_label": "xiaoqingguo",
+    "owned_process_root": "/home/xiaoqingguo/",
+    "default_quota_gb": 800,
+    "filesystem_summary": {
+      "total_size_bytes": 3779172614144,
+      "total_used_bytes": 3529280237568,
+      "total_available_bytes": 57844424704,
+      "max_use_percent": 99.0,
+      "filesystems": [
+        {
+          "filesystem": "/dev/mapper/vg_data-lv_storage",
+          "mountpoint": "/home",
+          "size_bytes": 3779172614144,
+          "used_bytes": 3529280237568,
+          "available_bytes": 57844424704,
+          "use_percent": 99.0,
+          "paths": [
+            "Rongkun",
+            "yuewang"
+          ]
+        }
+      ]
+    },
+    "gpu_summary": {
+      "status": "error",
+      "items": [],
+      "excluded_indices": [
+        7
+      ],
+      "error": "Connection closed by 158.182.11.82 port 22"
+    },
+    "status": "degraded",
+    "paths": [
+      {
+        "label": "Rongkun",
+        "path": "/home/xiaoqingguo/Rongkun",
+        "status": "ok",
+        "quota_status": "over_quota",
+        "quota_bytes": 858993459200,
+        "quota_human": "800.00 GB",
+        "quota_used_percent": 114.66,
+        "quota_remaining_bytes": -125947680017,
+        "quota_over_bytes": 125947680017,
+        "bytes": 984941139217,
+        "human": "919G",
+        "filesystem": "/dev/mapper/vg_data-lv_storage",
+        "filesystem_size_bytes": 3779172614144,
+        "filesystem_used_bytes": 3529280237568,
+        "filesystem_available_bytes": 57844424704,
+        "filesystem_use_percent": 99.0,
+        "mountpoint": "/home",
+        "error": null
+      },
+      {
+        "label": "yuewang",
+        "path": "/home/xiaoqingguo/yuewang",
+        "status": "ok",
+        "quota_status": "over_quota",
+        "quota_bytes": 858993459200,
+        "quota_human": "800.00 GB",
+        "quota_used_percent": 123.91,
+        "quota_remaining_bytes": -205409402521,
+        "quota_over_bytes": 205409402521,
+        "bytes": 1064402861721,
+        "human": "998G",
+        "filesystem": "/dev/mapper/vg_data-lv_storage",
+        "filesystem_size_bytes": 3779172614144,
+        "filesystem_used_bytes": 3529280278528,
+        "filesystem_available_bytes": 57844383744,
+        "filesystem_use_percent": 99.0,
+        "mountpoint": "/home",
+        "error": null
+      },
+      {
+        "label": "Hxchen",
+        "path": "/home/xiaoqingguo/Hxchen",
+        "status": "error",
+        "quota_status": "ok",
+        "quota_bytes": 858993459200,
+        "quota_human": "800.00 GB",
+        "quota_used_percent": null,
+        "quota_remaining_bytes": null,
+        "quota_over_bytes": 0,
+        "bytes": null,
+        "human": null,
+        "filesystem": null,
+        "filesystem_size_bytes": null,
+        "filesystem_used_bytes": null,
+        "filesystem_available_bytes": null,
+        "filesystem_use_percent": null,
+        "mountpoint": null,
+        "error": "Connection closed by 158.182.11.82 port 22"
+      }
+    ]
   }
 ]
